@@ -19,7 +19,7 @@ public class DataInitializer {
                 admin.setNome("Admin");
                 admin.setEmail("admin@exemplo.com");
                 admin.setSenha(passwordEncoder.encode("admin123"));  // senha criptografada
-                admin.setRole(Role.ROLE_ADMIN);
+                admin.setRole(Role.ADMIN);
                 userRepository.save(admin);
                 System.out.println("Admin criado: admin@exemplo.com / senha: admin123");
             }

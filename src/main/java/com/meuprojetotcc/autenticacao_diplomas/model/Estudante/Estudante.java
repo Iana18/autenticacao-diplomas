@@ -19,6 +19,7 @@ public class Estudante {
     @Column(unique = true, nullable = false)
     private String email;
 
+
     @Column(name = "numero_matricula", unique = true, nullable = false)
     private String numeroMatricula;
 
@@ -88,4 +89,6 @@ public class Estudante {
     public void setGenero(String genero) {
         this.genero = genero;
     }
+
+
 }
