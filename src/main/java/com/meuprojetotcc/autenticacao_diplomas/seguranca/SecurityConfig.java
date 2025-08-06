@@ -1,6 +1,5 @@
 package com.meuprojetotcc.autenticacao_diplomas.seguranca;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.*;
 import org.springframework.http.HttpMethod;
@@ -15,7 +14,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity(prePostEnabled = true)  // para usar @PreAuthorize e outros
 public class SecurityConfig {
 
     @Autowired
@@ -28,17 +27,26 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
+        http
+                // desabilita CSRF para APIs REST; se usar forms, reavalie isso
+                .csrf(csrf -> csrf.disable())
+
+                // Define quais endpoints são públicos e quais precisam de autenticação
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/**").permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/estudante/**").hasAnyRole("EMISSOR", "ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/certificado/**").hasAnyRole("ESTUDANTE", "EMISSOR", "ADMIN")
-                        .requestMatchers("/certificado/meus").hasRole("ESTUDANTE")
-                        .anyRequest().authenticated()
+                        //.requestMatchers("/api/auth/login", "/api/auth/register").permitAll()  // endpoints públicos de autenticação
+                        // exemplo de proteção por roles
+                       // .requestMatchers("/admin/**").hasRole("ADMIN")
+                       // .requestMatchers("/estudante/**").hasAnyRole("EMISSOR", "ADMIN")
+                       // .requestMatchers(HttpMethod.GET, "/certificado/**").hasAnyRole("ESTUDANTE", "EMISSOR", "ADMIN")
+                      //  .requestMatchers("/certificado/meus").hasRole("ESTUDANTE")
+                      //  .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
+
+                // Configura a aplicação para não criar sessão (stateless) porque usará JWT
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
+        // Adiciona o filtro JWT antes do filtro padrão de autenticação
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -46,6 +54,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder();  // bcrypt para hashing de senha
     }
 }

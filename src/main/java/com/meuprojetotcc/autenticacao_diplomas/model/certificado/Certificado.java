@@ -12,9 +12,11 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "diplomas")
+//@Getter @Setter @NoArgsConstructor
 public class Certificado {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(optional = false)
@@ -33,29 +35,31 @@ public class Certificado {
     @JoinColumn(name = "criado_por_id")
     private User criadoPor;
 
-
-
     @Column(nullable = false)
-    private LocalDateTime dataEmissao;
+    private LocalDateTime dataEmissao = LocalDateTime.now();
 
     private LocalDateTime dataRevogacao;  // Null se ativo
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Status status;
+    private Status status = Status.ATIVO;
 
     private String enderecoTransacao;
 
     private String hashBlockchain;
 
-    // === CONSTRUTORES ===
+    // Método para revogar o certificado
+    public void revogar() {
+        this.status = Status.REVOGADO;
+        this.dataRevogacao = LocalDateTime.now();
+    }
 
-   /* public Certificado() {
-        this.status = "ativo";
+    // Método para reemitir o certificado (reactivar)
+    public void reemitir() {
+        this.status = Status.ATIVO;
+        this.dataRevogacao = null;
         this.dataEmissao = LocalDateTime.now();
     }
-*/
-
     public Certificado() {
         // construtor vazio necessário para JPA e para usar new Certificado()
     }

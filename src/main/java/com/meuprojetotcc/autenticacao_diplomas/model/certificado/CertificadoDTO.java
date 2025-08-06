@@ -4,59 +4,36 @@ package com.meuprojetotcc.autenticacao_diplomas.model.certificado;
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
 
 import java.time.LocalDateTime;
-
 public class CertificadoDTO {
 
-    private Long id;
     private Long estudanteId;
     private Long cursoId;
     private Long instituicaoId;
-    private Long criadoPorId;
-
-    private LocalDateTime dataEmissao;
-    private LocalDateTime dataRevogacao;
-    private Status status;
     private String enderecoTransacao;
     private String hashBlockchain;
-        // === GETTERS E SETTERS ===
+    private Status status;  // <-- adicione este campo
 
-        public Long getId() {
-            return id;
-        }
-
-        public void setId(Long id) {
-            this.id = id;
-        }
+    private Long criadoPorId;
 
 
-
-        /*public String getStatus() {
-            return status;
-        }
-
-        public void setStatus(String status) {
-            this.status = status;
-        }
-
-*/
-
-        public String getHashBlockchain() {
-            return hashBlockchain;
-        }
-
-        public void setHashBlockchain(String hashBlockchain) {
-            this.hashBlockchain = hashBlockchain;
-        }
-
-        public String getEnderecoTransacao() {
-            return enderecoTransacao;
-        }
-
-        public void setEnderecoTransacao(String enderecoTransacao) {
-            this.enderecoTransacao = enderecoTransacao;
-        }
+    // GETTERS E SETTERS
 
 
+    public Long getCriadoPorId() {
+        return criadoPorId;
+    }
+
+    public void setCriadoPorId(Long criadoPorId) {
+        this.criadoPorId = criadoPorId;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
 
 
     public Long getEstudanteId() {
@@ -68,33 +45,34 @@ public class CertificadoDTO {
     }
 
     public Long getCursoId() {
-            return cursoId;
-        }
+        return cursoId;
+    }
 
-        public void setCursoId(Long cursoId) {
-            this.cursoId = cursoId;
-        }
+    public void setCursoId(Long cursoId) {
+        this.cursoId = cursoId;
+    }
 
-        public Long getInstituicaoId() {
-            return instituicaoId;
-        }
+    public Long getInstituicaoId() {
+        return instituicaoId;
+    }
 
-        public void setInstituicaoId(Long instituicaoId) {
-            this.instituicaoId = instituicaoId;
-        }
+    public void setInstituicaoId(Long instituicaoId) {
+        this.instituicaoId = instituicaoId;
+    }
 
-        public Long getCriadoPorId() {
-            return criadoPorId;
-        }
+    public String getEnderecoTransacao() {
+        return enderecoTransacao;
+    }
 
-        public void setCriadoPorId(Long criadoPorId) {
-            this.criadoPorId = criadoPorId;
-        }
+    public void setEnderecoTransacao(String enderecoTransacao) {
+        this.enderecoTransacao = enderecoTransacao;
+    }
 
-    public Long getUserId() {
+    public String getHashBlockchain() {
+        return hashBlockchain;
+    }
 
-            return criadoPorId;
-
+    public void setHashBlockchain(String hashBlockchain) {
+        this.hashBlockchain = hashBlockchain;
     }
 }
-

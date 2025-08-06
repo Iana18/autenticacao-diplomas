@@ -3,18 +3,14 @@ package com.meuprojetotcc.autenticacao_diplomas.model.verificacao;
 import com.meuprojetotcc.autenticacao_diplomas.model.certificado.Certificado;
 import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
 @Entity
 @Table(name = "verificacoes")
 public class Verificacao {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(optional = false)
@@ -28,6 +24,17 @@ public class Verificacao {
     @Column(nullable = false)
     private LocalDateTime dataVerificacao;
 
+    // Construtor padrão
+    public Verificacao() {}
+
+    // Construtor com parâmetros
+    public Verificacao(Certificado certificado, User verificador, LocalDateTime dataVerificacao) {
+        this.certificado = certificado;
+        this.verificador = verificador;
+        this.dataVerificacao = dataVerificacao;
+    }
+
+    // Getters e Setters
     public Long getId() {
         return id;
     }

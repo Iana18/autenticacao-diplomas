@@ -1,9 +1,8 @@
 package com.meuprojetotcc.autenticacao_diplomas.service;
 
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
-//import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
 import com.meuprojetotcc.autenticacao_diplomas.repository.EstudanteRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,55 +11,70 @@ import java.util.Optional;
 @Service
 public class EstudanteService {
 
+    private final EstudanteRepository estudanteRepository;
 
-    @Autowired
-    private EstudanteRepository estudanteRepository;
+    private final PasswordEncoder passwordEncoder;
 
-   /* public EstudanteService(EstudanteRepository repo) {
-        this.repo = repo;
-    }*/
+    public EstudanteService(EstudanteRepository estudanteRepository, PasswordEncoder passwordEncoder) {
+        this.estudanteRepository = estudanteRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
-    public Estudante criarEstudante(Estudante estudante) {
-        if (estudanteRepository.existsByEmail(estudante.getEmail())) {
-            throw new RuntimeException("Já existe um estudante com este e-mail.");
+
+    //public EstudanteService(EstudanteRepository estudanteRepository) {
+      //  this.estudanteRepository = estudanteRepository;
+   // }
+
+    public Estudante salvarEstudante(Estudante estudante) {
+        if(estudanteRepository.existsByEmail(estudante.getEmail())) {
+            throw new RuntimeException("Email já cadastrado.");
         }
-        if (estudanteRepository.existsByNumeroMatricula(estudante.getNumeroMatricula())) {
-            throw new RuntimeException("Já existe um estudante com este número de matrícula.");
+        if(estudanteRepository.existsByNumeroMatricula(estudante.getNumeroMatricula())) {
+            throw new RuntimeException("Número de matrícula já cadastrado.");
         }
+        // Criptografa senha antes de salvar
+        estudante.setSenha(passwordEncoder.encode(estudante.getSenha()));
         return estudanteRepository.save(estudante);
     }
 
-    public List<Estudante> listarTodos() {
-        return estudanteRepository.findAll();
+    public List<Estudante> buscarPorNome(String nome) {
+        return estudanteRepository.findByNomeCompletoContainingIgnoreCase(nome);
     }
 
+    public boolean existsByNumeroMatricula(String numeroMatricula) {
+        return estudanteRepository.existsByNumeroMatricula(numeroMatricula);
+    }
+
+    public boolean existsByEmail(String email) {
+        return estudanteRepository.existsByEmail(email);
+    }
     public Optional<Estudante> buscarPorId(Long id) {
         return estudanteRepository.findById(id);
     }
 
-    public Estudante atualizarEstudante(Long id, Estudante novosDados) {
-        return estudanteRepository.findById(id).map(estudante -> {
-            estudante.setNomeCompleto(novosDados.getNomeCompleto());
-            estudante.setEmail(novosDados.getEmail());
-            estudante.setNumeroMatricula(novosDados.getNumeroMatricula());
-            estudante.setDataNascimento(novosDados.getDataNascimento());
-            estudante.setGenero(novosDados.getGenero());
-            return estudanteRepository.save(estudante);
-        }).orElseThrow(() -> new RuntimeException("Estudante não encontrado com ID: " + id));
-    }
-
-    public void removerEstudante(Long id) {
-        if (!estudanteRepository.existsById(id)) {
-            throw new RuntimeException("Estudante não encontrado com ID: " + id);
-        }
+    public void deletarEstudante(Long id) {
         estudanteRepository.deleteById(id);
     }
 
-    public List<Estudante> buscarPorNomeCompleto(String nomeCompleto) {
-        return estudanteRepository.findByNomeCompleto(nomeCompleto);
+    public Estudante atualizarEstudante(Long id, Estudante dadosAtualizados) {
+        return estudanteRepository.findById(id).map(estudante -> {
+            estudante.setNomeCompleto(dadosAtualizados.getNomeCompleto());
+            estudante.setEmail(dadosAtualizados.getEmail());
+            estudante.setNumeroMatricula(dadosAtualizados.getNumeroMatricula());
+            estudante.setDataNascimento(dadosAtualizados.getDataNascimento());
+            estudante.setGenero(dadosAtualizados.getGenero());
+
+            // Atualiza senha somente se foi passada nova senha diferente
+            if (dadosAtualizados.getSenha() != null && !dadosAtualizados.getSenha().isEmpty()) {
+                estudante.setSenha(passwordEncoder.encode(dadosAtualizados.getSenha()));
+            }
+
+            return estudanteRepository.save(estudante);
+        }).orElseThrow(() -> new RuntimeException("Estudante não encontrado"));
     }
 
-    public List<Estudante> buscarPorNomeCompletoContainingIgnoreCase(String nomeCompleto) {
-        return estudanteRepository.findByNomeCompletoContainingIgnoreCase(nomeCompleto);
+
+    public List<Estudante> listarTodos() {
+        return estudanteRepository.findAll();
     }
 }

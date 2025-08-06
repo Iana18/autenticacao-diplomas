@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface VerificacaoRepository extends JpaRepository<Verificacao, Long> {
     List<Verificacao> findByCertificadoId(Long certificadoId);
+    List<Verificacao> findByVerificadorId(Long verificadorId);
 }

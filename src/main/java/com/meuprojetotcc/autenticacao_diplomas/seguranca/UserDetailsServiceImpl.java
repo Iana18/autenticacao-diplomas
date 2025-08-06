@@ -1,5 +1,6 @@
 package com.meuprojetotcc.autenticacao_diplomas.seguranca;
 
+import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.EstudanteUserDetails;
 import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
 import com.meuprojetotcc.autenticacao_diplomas.repository.UserRepository;
@@ -22,24 +23,15 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     private EstudanteRepository estudanteRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // Tenta buscar usuário normal (admin, emissor)
-        return userRepository.findByEmail(email)
-                .map(user -> {
-                    var authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().name());
-                    return new org.springframework.security.core.userdetails.User(
-                            user.getEmail(),
-                            user.getSenha(),
-                            Collections.singletonList(authority)
-                    );
-                })
-                // Se não achou, tenta achar Estudante
-                .or(() -> estudanteRepository.findByEmail(email)
-                        .map(estudante -> new org.springframework.security.core.userdetails.User(
-                                estudante.getEmail(),
-                                estudante.getNumeroMatricula(), // se quiser pode mudar essa senha para a correta
-                                Collections.singletonList(new SimpleGrantedAuthority("ROLE_ESTUDANTE"))
-                        )))
-                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + email));
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        // Tenta buscar usuário comum pelo email
+        return userRepository.findByEmail(username)
+                .map(user -> (UserDetails) user)  // User já implementa UserDetails
+                .orElseGet(() -> {
+                    // Se não achou, tenta buscar estudante pelo número de matrícula
+                    return estudanteRepository.findByNumeroMatricula(username)
+                            .map(EstudanteUserDetails::new) // Adaptador para UserDetails
+                            .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + username));
+                });
     }
 }

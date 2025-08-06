@@ -1,6 +1,6 @@
-package com.meuprojetotcc.autenticacao_diplomas.seguranca;
+package com.meuprojetotcc.autenticacao_diplomas.model.user;
 
-public class LoginRequestDto {
+public class LoginRequestUserDto {
     private String email;
     private String senha;
 

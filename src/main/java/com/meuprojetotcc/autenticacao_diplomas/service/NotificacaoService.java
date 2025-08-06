@@ -1,10 +1,7 @@
 package com.meuprojetotcc.autenticacao_diplomas.service;
 
 import com.meuprojetotcc.autenticacao_diplomas.model.notificacao.Notificacao;
-
-import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
 import com.meuprojetotcc.autenticacao_diplomas.repository.NotificacaoRepository;
-import com.meuprojetotcc.autenticacao_diplomas.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,36 +12,43 @@ import java.util.Optional;
 public class NotificacaoService {
 
     private final NotificacaoRepository notificacaoRepository;
-    private final UserRepository userRepository;
 
-    public NotificacaoService(NotificacaoRepository repo, UserRepository userRepo) {
-        this.notificacaoRepository = repo;
-        this.userRepository = userRepo;
-    }
-
-    public Notificacao criar(Long usuarioId, String mensagem) {
-        Optional<User> usuario = userRepository.findById(usuarioId);
-        if (usuario.isEmpty()) {
-            throw new RuntimeException("Usuário não encontrado");
-        }
-        Notificacao n = new Notificacao();
-        n.setUsuario(usuario.get());
-        n.setMensagem(mensagem);
-        n.setDataCriacao(LocalDateTime.now());
-        n.setLida(false);
-        return notificacaoRepository.save(n);
+    public NotificacaoService(NotificacaoRepository notificacaoRepository) {
+        this.notificacaoRepository = notificacaoRepository;
     }
 
     public List<Notificacao> listarPorUsuario(Long usuarioId) {
         return notificacaoRepository.findByUsuarioId(usuarioId);
     }
 
-    public void marcarComoLida(Long id) {
-        Optional<Notificacao> n = notificacaoRepository.findById(id);
-        if (n.isPresent()) {
-            Notificacao notif = n.get();
-            notif.setLida(true);
-            notificacaoRepository.save(notif);
+    public Notificacao criarNotificacao(Notificacao notificacao) {
+        notificacao.setDataCriacao(LocalDateTime.now());
+        notificacao.setLida(false);
+        return notificacaoRepository.save(notificacao);
+    }
+
+    public Notificacao atualizarNotificacao(Long notificacaoId, String novaMensagem, Boolean lida) {
+        Optional<Notificacao> notifOpt = notificacaoRepository.findById(notificacaoId);
+        if (notifOpt.isEmpty()) {
+            throw new RuntimeException("Notificação não encontrada.");
         }
+
+        Notificacao notif = notifOpt.get();
+
+        if (novaMensagem != null) {
+            notif.setMensagem(novaMensagem);
+        }
+        if (lida != null) {
+            notif.setLida(lida);
+        }
+
+        return notificacaoRepository.save(notif);
+    }
+
+    public void deletarNotificacao(Long notificacaoId) {
+        if (!notificacaoRepository.existsById(notificacaoId)) {
+            throw new RuntimeException("Notificação não encontrada.");
+        }
+        notificacaoRepository.deleteById(notificacaoId);
     }
 }

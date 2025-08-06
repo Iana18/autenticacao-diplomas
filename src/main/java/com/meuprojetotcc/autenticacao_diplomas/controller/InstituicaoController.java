@@ -1,8 +1,8 @@
 package com.meuprojetotcc.autenticacao_diplomas.controller;
 
 import com.meuprojetotcc.autenticacao_diplomas.model.Instituicao.Instituicao;
+import com.meuprojetotcc.autenticacao_diplomas.model.Instituicao.InstituicaoDto;
 import com.meuprojetotcc.autenticacao_diplomas.service.InstituicaoService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,17 +12,16 @@ import java.util.List;
 @RequestMapping("/instituicoes")
 public class InstituicaoController {
 
-    @Autowired
-    private InstituicaoService instituicaoService;
+    private final InstituicaoService instituicaoService;
 
-   // public InstituicaoController(InstituicaoService service) {
-    //    this.service = service;
-  //  }
+    public InstituicaoController(InstituicaoService instituicaoService) {
+        this.instituicaoService = instituicaoService;
+    }
 
     @PostMapping
-    public ResponseEntity<Instituicao> criar(@RequestBody Instituicao instituicao) {
-        Instituicao salvo = instituicaoService.salvar(instituicao);
-        return ResponseEntity.ok(salvo);
+    public ResponseEntity<Instituicao> criarInstituicao(@RequestBody InstituicaoDto instituicaoDto) {
+        Instituicao instituicao = instituicaoService.criarInstituicao(instituicaoDto);
+        return ResponseEntity.ok(instituicao);
     }
 
     @GetMapping("/{id}")
@@ -33,13 +32,33 @@ public class InstituicaoController {
     }
 
     @GetMapping
-    public List<Instituicao> listarTodos() {
-        return instituicaoService.listarTodos();
+    public ResponseEntity<List<Instituicao>> listarPorNome(@RequestParam(required = false) String nome) {
+        List<Instituicao> instituicoes;
+        if (nome != null && !nome.isEmpty()) {
+            instituicoes = instituicaoService.buscarPorNome(nome);
+        } else {
+            instituicoes = instituicaoService.listarTodas();
+        }
+        return ResponseEntity.ok(instituicoes);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Instituicao> atualizar(@PathVariable Long id, @RequestBody InstituicaoDto instituicaoDto) {
+        try {
+            Instituicao atualizada = instituicaoService.atualizarInstituicao(id, instituicaoDto);
+            return ResponseEntity.ok(atualizada);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
-        instituicaoService.deletar(id);
-        return ResponseEntity.noContent().build();
+        try {
+            instituicaoService.deletarInstituicao(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

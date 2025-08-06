@@ -1,10 +1,10 @@
 package com.meuprojetotcc.autenticacao_diplomas.service;
-
 import com.meuprojetotcc.autenticacao_diplomas.model.certificado.CertificadoDTO;
-import com.meuprojetotcc.autenticacao_diplomas.model.Curso.*;
+import com.meuprojetotcc.autenticacao_diplomas.model.Curso.Curso;
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
 import com.meuprojetotcc.autenticacao_diplomas.model.Instituicao.Instituicao;
-import com.meuprojetotcc.autenticacao_diplomas.model.certificado.*;
+import com.meuprojetotcc.autenticacao_diplomas.model.certificado.Certificado;
+import com.meuprojetotcc.autenticacao_diplomas.model.certificado.Status;
 import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
 import com.meuprojetotcc.autenticacao_diplomas.repository.*;
 import org.springframework.stereotype.Service;
@@ -32,6 +32,7 @@ public class CertificadoService {
         this.instituicaoRepository = instituicaoRepository;
         this.userRepository = userRepository;
     }
+
     public Certificado registrarCertificado(CertificadoDTO dto) {
         Optional<Estudante> estudante = estudanteRepository.findById(dto.getEstudanteId());
         Optional<Curso> curso = cursoRepository.findById(dto.getCursoId());
@@ -50,8 +51,8 @@ public class CertificadoService {
         c.setDataEmissao(LocalDateTime.now());
         c.setStatus(Status.ATIVO);
         c.setDataRevogacao(null);
-        c.setEnderecoTransacao(null);
-        c.setHashBlockchain(null);
+        c.setEnderecoTransacao(dto.getEnderecoTransacao());
+        c.setHashBlockchain(dto.getHashBlockchain());
 
         return certificadoRepository.save(c);
     }
@@ -86,5 +87,31 @@ public class CertificadoService {
             return certificadoRepository.save(c);
         }
         throw new RuntimeException("Certificado não encontrado");
+    }
+
+    public Certificado atualizar(Long id, CertificadoDTO dto) {
+        Certificado certificado = certificadoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Certificado não encontrado"));
+
+        if (dto.getEnderecoTransacao() != null) {
+            certificado.setEnderecoTransacao(dto.getEnderecoTransacao());
+        }
+
+        if (dto.getHashBlockchain() != null) {
+            certificado.setHashBlockchain(dto.getHashBlockchain());
+        }
+
+        if (dto.getStatus() != null) {
+            certificado.setStatus(dto.getStatus());
+            if (dto.getStatus() == Status.REVOGADO) {
+                certificado.setDataRevogacao(LocalDateTime.now());
+            } else if (dto.getStatus() == Status.ATIVO) {
+                certificado.setDataRevogacao(null);
+            }
+        }
+
+        // Atualizar outras propriedades se necessário
+
+        return certificadoRepository.save(certificado);
     }
 }

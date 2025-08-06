@@ -1,7 +1,7 @@
 package com.meuprojetotcc.autenticacao_diplomas.controller;
 
-
-import com.meuprojetotcc.autenticacao_diplomas.model.certificado.*;
+import com.meuprojetotcc.autenticacao_diplomas.model.certificado.Certificado;
+import com.meuprojetotcc.autenticacao_diplomas.model.certificado.CertificadoDTO;
 import com.meuprojetotcc.autenticacao_diplomas.service.CertificadoService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,9 +24,40 @@ public class CertificadoController {
         return ResponseEntity.ok(criado);
     }
 
+    @PutMapping("/atualizar/{id}")
+    public ResponseEntity<Certificado> atualizar(@PathVariable Long id, @RequestBody CertificadoDTO dto) {
+        try {
+            Certificado atualizado = service.atualizar(id, dto);
+            return ResponseEntity.ok(atualizado);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/revogar/{id}")
+    public ResponseEntity<Certificado> revogar(@PathVariable Long id) {
+        try {
+            Certificado revogado = service.revogar(id);
+            return ResponseEntity.ok(revogado);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/emitir/{id}")
+    public ResponseEntity<Certificado> emitir(@PathVariable Long id) {
+        try {
+            Certificado emitido = service.reemitir(id);
+            return ResponseEntity.ok(emitido);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping
     public ResponseEntity<List<Certificado>> listarTodos() {
-        return ResponseEntity.ok(service.verTodos());
+        List<Certificado> certificados = service.verTodos();
+        return ResponseEntity.ok(certificados);
     }
 
     @GetMapping("/estudante/{id}")
@@ -36,23 +67,5 @@ public class CertificadoController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(certificados);
-    }
-
-    @PutMapping("/revogar/{id}")
-    public ResponseEntity<Certificado> revogar(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(service.revogar(id));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @PutMapping("/emitir/{id}")
-    public ResponseEntity<Certificado> emitir(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(service.reemitir(id));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
     }
 }

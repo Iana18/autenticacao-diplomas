@@ -1,10 +1,10 @@
 package com.meuprojetotcc.autenticacao_diplomas.controller;
 
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
-import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.*;
+import com.meuprojetotcc.autenticacao_diplomas.repository.EstudanteRepository;
 import com.meuprojetotcc.autenticacao_diplomas.service.EstudanteService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,20 +13,34 @@ import java.util.List;
 @RequestMapping("/estudantes")
 public class EstudanteController {
 
-    @Autowired
-    private  EstudanteService estudanteService;
+    private final EstudanteService estudanteService;
+    private final EstudanteRepository estudanteRepository;
 
+
+    private final PasswordEncoder passwordEncoder;
+
+
+
+    public EstudanteController(EstudanteService estudanteService , EstudanteRepository estudanteRepository,
+                               PasswordEncoder passwordEncoder) {
+        this.estudanteService = estudanteService;
+        this.estudanteRepository = estudanteRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
 
     @PostMapping
-    public ResponseEntity<Estudante> criar(@RequestBody Estudante estudante) {
-        Estudante criado = estudanteService.criarEstudante(estudante);
-        return ResponseEntity.status(201).body(criado);
-    }
+    public ResponseEntity<?> criarEstudante(@RequestBody Estudante estudante) {
+        if (estudanteService.existsByNumeroMatricula(estudante.getNumeroMatricula())) {
+            return ResponseEntity.badRequest().body("Número de matrícula já cadastrado");
+        }
+        if (estudanteService.existsByEmail(estudante.getEmail())) {
+            return ResponseEntity.badRequest().body("Email já cadastrado");
+        }
 
-    @GetMapping
-    public List<Estudante> listarTodos() {
-        return estudanteService.listarTodos();
+        // Aqui NÃO precisa criptografar, o service já faz isso
+        Estudante criado = estudanteService.salvarEstudante(estudante);
+        return ResponseEntity.ok(criado);
     }
 
     @GetMapping("/{id}")
@@ -36,8 +50,20 @@ public class EstudanteController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/buscar")
+    public ResponseEntity<List<Estudante>> buscarPorNome(@RequestParam String nome) {
+        List<Estudante> estudantes = estudanteService.buscarPorNome(nome);
+        return ResponseEntity.ok(estudantes);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Estudante>> listarTodos() {
+        List<Estudante> estudantes = estudanteService.listarTodos();
+        return ResponseEntity.ok(estudantes);
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<Estudante> atualizar(@PathVariable Long id, @RequestBody Estudante estudante) {
+    public ResponseEntity<Estudante> atualizarEstudante(@PathVariable Long id, @RequestBody Estudante estudante) {
         try {
             Estudante atualizado = estudanteService.atualizarEstudante(id, estudante);
             return ResponseEntity.ok(atualizado);
@@ -47,12 +73,8 @@ public class EstudanteController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable Long id) {
-        try {
-            estudanteService.removerEstudante(id);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<Void> deletarEstudante(@PathVariable Long id) {
+        estudanteService.deletarEstudante(id);
+        return ResponseEntity.noContent().build();
     }
 }

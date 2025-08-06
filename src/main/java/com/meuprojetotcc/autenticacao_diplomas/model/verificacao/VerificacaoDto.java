@@ -1,10 +1,10 @@
 package com.meuprojetotcc.autenticacao_diplomas.model.verificacao;
 
 
-import lombok.Getter;
-import lombok.Setter;
+
 
 import java.time.LocalDateTime;
+
 
 
 public class VerificacaoDto {
@@ -14,12 +14,19 @@ public class VerificacaoDto {
     private Long verificadorId;
     private LocalDateTime dataVerificacao;
 
+    public VerificacaoDto() {}
 
+    public VerificacaoDto(Long id, Long certificadoId, Long verificadorId, LocalDateTime dataVerificacao) {
+        this.id = id;
+        this.certificadoId = certificadoId;
+        this.verificadorId = verificadorId;
+        this.dataVerificacao = dataVerificacao;
+    }
 
+    // Getters e setters
     public Long getId() {
         return id;
     }
-
     public void setId(Long id) {
         this.id = id;
     }
@@ -27,7 +34,6 @@ public class VerificacaoDto {
     public Long getCertificadoId() {
         return certificadoId;
     }
-
     public void setCertificadoId(Long certificadoId) {
         this.certificadoId = certificadoId;
     }
@@ -35,7 +41,6 @@ public class VerificacaoDto {
     public Long getVerificadorId() {
         return verificadorId;
     }
-
     public void setVerificadorId(Long verificadorId) {
         this.verificadorId = verificadorId;
     }
@@ -43,7 +48,6 @@ public class VerificacaoDto {
     public LocalDateTime getDataVerificacao() {
         return dataVerificacao;
     }
-
     public void setDataVerificacao(LocalDateTime dataVerificacao) {
         this.dataVerificacao = dataVerificacao;
     }

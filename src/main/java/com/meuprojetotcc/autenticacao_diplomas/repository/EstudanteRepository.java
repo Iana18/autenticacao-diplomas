@@ -21,4 +21,6 @@ public interface EstudanteRepository extends JpaRepository<Estudante, Long> {
 
 
     boolean existsByNumeroMatricula(String numeroMatricula);
+
+
 }

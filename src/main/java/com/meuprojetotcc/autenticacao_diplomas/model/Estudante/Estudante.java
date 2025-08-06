@@ -19,6 +19,8 @@ public class Estudante {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @Column(nullable = false)
+    private String senha;
 
     @Column(name = "numero_matricula", unique = true, nullable = false)
     private String numeroMatricula;
@@ -32,12 +34,13 @@ public class Estudante {
 
     public Estudante() { super();}
 
-    public Estudante(String nomeCompleto, String email, String numeroMatricula, LocalDate dataNascimento, String genero) {
+    public Estudante(String nomeCompleto, String email, String senha, String numeroMatricula, LocalDate dataNascimento, String genero) {
         this.nomeCompleto = nomeCompleto;
         this.email = email;
         this.numeroMatricula = numeroMatricula;
         this.dataNascimento = dataNascimento;
         this.genero = genero;
+        this.senha= senha;
     }
 
     // === GETTERS E SETTERS ===
@@ -90,5 +93,11 @@ public class Estudante {
         this.genero = genero;
     }
 
+    public String getSenha() {
+        return senha;
+    }
 
+    public void setSenha(String senha) {
+        this.senha = senha;
+    }
 }

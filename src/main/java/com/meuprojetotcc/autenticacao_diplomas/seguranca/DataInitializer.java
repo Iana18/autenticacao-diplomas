@@ -22,6 +22,9 @@ public class DataInitializer {
                 admin.setRole(Role.ADMIN);
                 userRepository.save(admin);
                 System.out.println("Admin criado: admin@exemplo.com / senha: admin123");
+
+            }else {
+                System.out.println("Admin Já existe.");
             }
         };
     }
