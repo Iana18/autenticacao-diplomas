@@ -1,47 +1,47 @@
-package com.meuprojetotcc.autenticacao_diplomas.controller;
+    package com.meuprojetotcc.autenticacao_diplomas.controller;
 
-import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
-import com.meuprojetotcc.autenticacao_diplomas.repository.EstudanteRepository;
-import com.meuprojetotcc.autenticacao_diplomas.service.EstudanteService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+    import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
+    import com.meuprojetotcc.autenticacao_diplomas.repository.EstudanteRepository;
+    import com.meuprojetotcc.autenticacao_diplomas.service.EstudanteService;
+    import org.springframework.http.ResponseEntity;
+    import org.springframework.security.crypto.password.PasswordEncoder;
+    import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+    import java.util.List;
 
-@RestController
-@RequestMapping("/estudantes")
-public class EstudanteController {
+    @RestController
+    @RequestMapping("/estudantes") // isso torna "/criar" acessível em "/estudantes/criar"
+    public class EstudanteController {
 
-    private final EstudanteService estudanteService;
-    private final EstudanteRepository estudanteRepository;
-
-
-    private final PasswordEncoder passwordEncoder;
+        private final EstudanteService estudanteService;
+        private final EstudanteRepository estudanteRepository;
 
 
-
-    public EstudanteController(EstudanteService estudanteService , EstudanteRepository estudanteRepository,
-                               PasswordEncoder passwordEncoder) {
-        this.estudanteService = estudanteService;
-        this.estudanteRepository = estudanteRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
+        private final PasswordEncoder passwordEncoder;
 
 
-    @PostMapping
-    public ResponseEntity<?> criarEstudante(@RequestBody Estudante estudante) {
-        if (estudanteService.existsByNumeroMatricula(estudante.getNumeroMatricula())) {
-            return ResponseEntity.badRequest().body("Número de matrícula já cadastrado");
-        }
-        if (estudanteService.existsByEmail(estudante.getEmail())) {
-            return ResponseEntity.badRequest().body("Email já cadastrado");
+
+        public EstudanteController(EstudanteService estudanteService , EstudanteRepository estudanteRepository,
+                                   PasswordEncoder passwordEncoder) {
+            this.estudanteService = estudanteService;
+            this.estudanteRepository = estudanteRepository;
+            this.passwordEncoder = passwordEncoder;
         }
 
-        // Aqui NÃO precisa criptografar, o service já faz isso
-        Estudante criado = estudanteService.salvarEstudante(estudante);
-        return ResponseEntity.ok(criado);
-    }
+
+        @PostMapping("/criar")
+        public ResponseEntity<?> criarEstudante(@RequestBody Estudante estudante) {
+            if (estudanteService.existsByNumeroMatricula(estudante.getNumeroMatricula())) {
+                return ResponseEntity.badRequest().body("Número de matrícula já cadastrado");
+            }
+            if (estudanteService.existsByEmail(estudante.getEmail())) {
+                return ResponseEntity.badRequest().body("Email já cadastrado");
+            }
+
+            // Aqui NÃO precisa criptografar, o service já faz isso
+            Estudante criado = estudanteService.salvarEstudante(estudante);
+            return ResponseEntity.ok(criado);
+        }
 
     @GetMapping("/{id}")
     public ResponseEntity<Estudante> buscarPorId(@PathVariable Long id) {

@@ -18,7 +18,7 @@ public class InstituicaoController {
         this.instituicaoService = instituicaoService;
     }
 
-    @PostMapping
+    @PostMapping("/criar")
     public ResponseEntity<Instituicao> criarInstituicao(@RequestBody InstituicaoDto instituicaoDto) {
         Instituicao instituicao = instituicaoService.criarInstituicao(instituicaoDto);
         return ResponseEntity.ok(instituicao);

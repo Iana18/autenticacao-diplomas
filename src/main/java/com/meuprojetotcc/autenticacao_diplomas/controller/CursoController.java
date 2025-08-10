@@ -18,7 +18,7 @@ public class CursoController {
         this.cursoService = cursoService;
     }
 
-    @PostMapping
+    @PostMapping("/criar")
     public ResponseEntity<Curso> criarCurso(@RequestBody CursoDto dto) {
         Curso criado = cursoService.criarCurso(dto);
         return ResponseEntity.ok(criado);
