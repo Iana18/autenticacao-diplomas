@@ -1,6 +1,6 @@
 package com.meuprojetotcc.autenticacao_diplomas.seguranca;
 
-import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.EstudanteUserDetails;
+
 import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
 import com.meuprojetotcc.autenticacao_diplomas.repository.UserRepository;
@@ -24,13 +24,12 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // Tenta buscar usuário comum pelo email
+        // Primeiro tenta achar usuário comum pelo email
         return userRepository.findByEmail(username)
-                .map(user -> (UserDetails) user)  // User já implementa UserDetails
+                .map(user -> (UserDetails) user) // User já implementa UserDetails
                 .orElseGet(() -> {
-                    // Se não achou, tenta buscar estudante pelo número de matrícula
+                    // Se não achar, tenta achar estudante pelo número de matrícula
                     return estudanteRepository.findByNumeroMatricula(username)
-                            .map(EstudanteUserDetails::new) // Adaptador para UserDetails
                             .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + username));
                 });
     }

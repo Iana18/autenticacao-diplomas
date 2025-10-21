@@ -12,9 +12,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
-@EnableMethodSecurity(prePostEnabled = true)  // para usar @PreAuthorize e outros
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Autowired
@@ -28,32 +33,53 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // desabilita CSRF para APIs REST; se usar forms, reavalie isso
                 .csrf(csrf -> csrf.disable())
-
-                // Define quais endpoints são públicos e quais precisam de autenticação
                 .authorizeHttpRequests(auth -> auth
-                        //.requestMatchers("/api/auth/login", "/api/auth/register").permitAll()  // endpoints públicos de autenticação
-                        // exemplo de proteção por roles
-                       // .requestMatchers("/admin/**").hasRole("ADMIN")
-                       // .requestMatchers("/estudante/**").hasAnyRole("EMISSOR", "ADMIN")
-                       // .requestMatchers(HttpMethod.GET, "/certificado/**").hasAnyRole("ESTUDANTE", "EMISSOR", "ADMIN")
-                      //  .requestMatchers("/certificado/meus").hasRole("ESTUDANTE")
-                      //  .anyRequest().authenticated()
+                       /* .requestMatchers("/api/auth/**").permitAll()
+
+                        // Admin: criar usuários e diplomas, emitir diplomas e certificados, consultar diplomas de qualquer estudante
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // Emissor: emitir diplomas e certificados
+                        .requestMatchers("/api/emissor/**").hasAnyRole("EMISSOR", "ADMIN")
+
+                        // Ministério: consultar diplomas de qualquer estudante
+                        .requestMatchers("/api/ministerio/**").hasRole("MINISTERIO")
+
+                        // Estudante: consultar apenas seus documentos
+                        .requestMatchers("/estudantes/**").hasRole("ESTUDANTE")*/
+
                         .anyRequest().permitAll()
                 )
-
-                // Configura a aplicação para não criar sessão (stateless) porque usará JWT
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        // Adiciona o filtro JWT antes do filtro padrão de autenticação
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of(
+                "http://127.0.0.1:5500",
+                "http://localhost:5500",
+                "http://127.0.0.1:5501"
+        ));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
+
+
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();  // bcrypt para hashing de senha
+        return new BCryptPasswordEncoder();
     }
 }

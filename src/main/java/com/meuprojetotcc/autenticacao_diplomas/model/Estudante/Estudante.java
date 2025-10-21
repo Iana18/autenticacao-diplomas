@@ -1,21 +1,32 @@
 package com.meuprojetotcc.autenticacao_diplomas.model.Estudante;
 
 
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.meuprojetotcc.autenticacao_diplomas.model.certificado.Certificado;
+import com.meuprojetotcc.autenticacao_diplomas.model.diploma.Diploma;
 import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 @Entity
 @Table(name = "estudantes")
-public class Estudante {
+public class Estudante implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+   /* @NotBlank(message = "Nome completo é obrigatório")
+    @Column(nullable = false)*/
     private String nomeCompleto;
-
+   /* @Email(message = "Email inválido")
+    @NotBlank(message = "Email é obrigatório")*/
     @Column(unique = true, nullable = false)
     private String email;
 
@@ -27,8 +38,15 @@ public class Estudante {
 
     @Column(name = "data_nascimento")
     private LocalDate dataNascimento;
+    @OneToMany(mappedBy = "estudante", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<Diploma> diplomas = new ArrayList<>();
 
+    @OneToMany(mappedBy = "estudante", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<Certificado> certificados = new ArrayList<>();
     private String genero;
+
 
     // === CONSTRUTORES ===
 
@@ -100,4 +118,54 @@ public class Estudante {
     public void setSenha(String senha) {
         this.senha = senha;
     }
+
+    public List<Diploma> getDiplomas() {
+        return diplomas;
+    }
+
+    public void setDiplomas(List<Diploma> diplomas) {
+        this.diplomas = diplomas;
+    }
+
+    public List<Certificado> getCertificados() {
+        return certificados;
+    }
+
+    public void setCertificados(List<Certificado> certificados) {
+        this.certificados = certificados;
+    }
+
+
+    // === Implementação UserDetails ===
+
+    @Override
+    @JsonIgnore
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_ESTUDANTE"));
+    }
+
+    @Override
+    @JsonIgnore
+    public String getPassword() { return this.senha; }
+
+    @Override
+    @JsonIgnore
+    public String getUsername() { return this.numeroMatricula; } // login pelo número de matrícula
+
+    @Override
+    @JsonIgnore
+    public boolean isAccountNonExpired() { return true; }
+
+    @Override
+    @JsonIgnore
+    public boolean isAccountNonLocked() { return true; }
+
+    @Override
+    @JsonIgnore
+    public boolean isCredentialsNonExpired() { return true; }
+
+    @Override
+    @JsonIgnore
+    public boolean isEnabled() { return true; }
+
 }

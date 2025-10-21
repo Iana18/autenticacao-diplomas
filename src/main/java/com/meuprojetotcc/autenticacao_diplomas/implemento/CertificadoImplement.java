@@ -1,18 +1,5 @@
 package com.meuprojetotcc.autenticacao_diplomas.implemento;
 
-import com.meuprojetotcc.autenticacao_diplomas.model.certificado.CertificadoDTO;
-import com.meuprojetotcc.autenticacao_diplomas.model.Curso.Curso;
-import com.meuprojetotcc.autenticacao_diplomas.model.Instituicao.Instituicao;
-import com.meuprojetotcc.autenticacao_diplomas.model.certificado.Certificado;
-import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
-import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
-import com.meuprojetotcc.autenticacao_diplomas.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 /*
 @Service
 public class CertificadoImplement {

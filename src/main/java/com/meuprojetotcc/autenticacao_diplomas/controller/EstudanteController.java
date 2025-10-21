@@ -1,8 +1,12 @@
     package com.meuprojetotcc.autenticacao_diplomas.controller;
 
     import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
+    import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.LoginEstudanteRequestDto;
     import com.meuprojetotcc.autenticacao_diplomas.repository.EstudanteRepository;
+    import com.meuprojetotcc.autenticacao_diplomas.seguranca.JwtResponseDto;
+    import com.meuprojetotcc.autenticacao_diplomas.seguranca.JwtUtil;
     import com.meuprojetotcc.autenticacao_diplomas.service.EstudanteService;
+    import org.springframework.beans.factory.annotation.Autowired;
     import org.springframework.http.ResponseEntity;
     import org.springframework.security.crypto.password.PasswordEncoder;
     import org.springframework.web.bind.annotation.*;
@@ -11,6 +15,7 @@
 
     @RestController
     @RequestMapping("/estudantes") // isso torna "/criar" acessível em "/estudantes/criar"
+    @CrossOrigin(origins = "*")
     public class EstudanteController {
 
         private final EstudanteService estudanteService;
@@ -18,14 +23,16 @@
 
 
         private final PasswordEncoder passwordEncoder;
-
+        @Autowired
+        private JwtUtil jwtUtil;
 
 
         public EstudanteController(EstudanteService estudanteService , EstudanteRepository estudanteRepository,
-                                   PasswordEncoder passwordEncoder) {
+                                   PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
             this.estudanteService = estudanteService;
             this.estudanteRepository = estudanteRepository;
             this.passwordEncoder = passwordEncoder;
+            this.jwtUtil = jwtUtil;
         }
 
 

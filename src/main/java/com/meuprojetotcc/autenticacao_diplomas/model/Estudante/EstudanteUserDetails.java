@@ -1,4 +1,4 @@
-package com.meuprojetotcc.autenticacao_diplomas.model.Estudante;
+/*package com.meuprojetotcc.autenticacao_diplomas.model.Estudante;
 
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
 import org.springframework.security.core.GrantedAuthority;
@@ -55,3 +55,5 @@ public class EstudanteUserDetails implements UserDetails {
         return true; // Ajuste conforme sua regra de negócio
     }
 }
+
+*/

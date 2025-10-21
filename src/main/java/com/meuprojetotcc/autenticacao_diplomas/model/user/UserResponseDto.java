@@ -1,5 +1,8 @@
 package com.meuprojetotcc.autenticacao_diplomas.model.user;
 
+import com.meuprojetotcc.autenticacao_diplomas.model.user.Role;
+
+
 public class UserResponseDto {
     private Long id;
     private String nome;
@@ -31,8 +34,13 @@ public class UserResponseDto {
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
-    public Role getRole() { return role; }
-    public void setRole(Role role) { this.role = role; }
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
 
     public String getSenha() { return senha; }
     public void setSenha(String senha) { this.senha = senha; }

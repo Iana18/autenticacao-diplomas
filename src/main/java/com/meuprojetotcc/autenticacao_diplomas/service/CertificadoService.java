@@ -1,9 +1,10 @@
 package com.meuprojetotcc.autenticacao_diplomas.service;
-import com.meuprojetotcc.autenticacao_diplomas.model.certificado.CertificadoDTO;
+
 import com.meuprojetotcc.autenticacao_diplomas.model.Curso.Curso;
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
 import com.meuprojetotcc.autenticacao_diplomas.model.Instituicao.Instituicao;
 import com.meuprojetotcc.autenticacao_diplomas.model.certificado.Certificado;
+import com.meuprojetotcc.autenticacao_diplomas.model.certificado.CertificadoRequestDTO;
 import com.meuprojetotcc.autenticacao_diplomas.model.certificado.Status;
 import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
 import com.meuprojetotcc.autenticacao_diplomas.repository.*;
@@ -11,10 +12,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class CertificadoService {
+
     private final CertificadoRepository certificadoRepository;
     private final EstudanteRepository estudanteRepository;
     private final CursoRepository cursoRepository;
@@ -33,85 +34,83 @@ public class CertificadoService {
         this.userRepository = userRepository;
     }
 
-    public Certificado registrarCertificado(CertificadoDTO dto) {
-        Optional<Estudante> estudante = estudanteRepository.findById(dto.getEstudanteId());
-        Optional<Curso> curso = cursoRepository.findById(dto.getCursoId());
-        Optional<Instituicao> instituicao = instituicaoRepository.findById(dto.getInstituicaoId());
-        Optional<User> criadoPor = userRepository.findById(dto.getCriadoPorId());
-
-        if (estudante.isEmpty() || curso.isEmpty() || instituicao.isEmpty() || criadoPor.isEmpty()) {
-            throw new RuntimeException("Dados inválidos para emitir o certificado.");
-        }
+    // =================== Registrar ===================
+    public Certificado registrarCertificado(CertificadoRequestDTO dto) {
+        Estudante estudante = estudanteRepository.findById(dto.getEstudanteId())
+                .orElseThrow(() -> new RuntimeException("Estudante não encontrado"));
+        Curso curso = cursoRepository.findById(dto.getCursoId())
+                .orElseThrow(() -> new RuntimeException("Curso não encontrado"));
+        Instituicao instituicao = instituicaoRepository.findById(dto.getInstituicaoId())
+                .orElseThrow(() -> new RuntimeException("Instituição não encontrada"));
+        User criadoPor = userRepository.findById(dto.getCriadoPorId())
+                .orElseThrow(() -> new RuntimeException("Usuário criador não encontrado"));
 
         Certificado c = new Certificado();
-        c.setEstudante(estudante.get());
-        c.setCurso(curso.get());
-        c.setInstituicao(instituicao.get());
-        c.setCriadoPor(criadoPor.get());
+        c.setEstudante(estudante);
+        c.setCurso(curso);
+        c.setInstituicao(instituicao);
+        c.setCriadoPor(criadoPor);
         c.setDataEmissao(LocalDateTime.now());
         c.setStatus(Status.ATIVO);
-        c.setDataRevogacao(null);
-        c.setEnderecoTransacao(dto.getEnderecoTransacao());
-        c.setHashBlockchain(dto.getHashBlockchain());
+
+        c.setTipoParticipacao(dto.getTipoParticipacao());
+        c.setCargaHoraria(dto.getCargaHoraria());
+
+        // Gera hash automaticamente
+        c.gerarHashBlockchain();
+
+        // Simula envio para blockchain
+        c.setEnderecoTransacao(enviarParaBlockchain(c.getHashBlockchain()));
 
         return certificadoRepository.save(c);
     }
 
+    // =================== Listar por estudante ===================
     public List<Certificado> verPorEstudante(Long estudanteId) {
-        Optional<Estudante> estudante = estudanteRepository.findById(estudanteId);
-        return estudante.map(certificadoRepository::findByEstudante).orElse(null);
+        Estudante estudante = estudanteRepository.findById(estudanteId)
+                .orElseThrow(() -> new RuntimeException("Estudante não encontrado"));
+        return certificadoRepository.findByEstudante(estudante);
     }
 
+    // =================== Listar todos ===================
     public List<Certificado> verTodos() {
         return certificadoRepository.findAll();
     }
 
+    // =================== Revogar ===================
     public Certificado revogar(Long id) {
-        Optional<Certificado> opt = certificadoRepository.findById(id);
-        if (opt.isPresent()) {
-            Certificado c = opt.get();
-            c.setStatus(Status.REVOGADO);
-            c.setDataRevogacao(LocalDateTime.now());
-            return certificadoRepository.save(c);
-        }
-        throw new RuntimeException("Certificado não encontrado");
+        Certificado c = certificadoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Certificado não encontrado"));
+        c.setStatus(Status.REVOGADO);
+        c.setDataRevogacao(LocalDateTime.now());
+        return certificadoRepository.save(c);
     }
 
+    // =================== Reemitir ===================
     public Certificado reemitir(Long id) {
-        Optional<Certificado> opt = certificadoRepository.findById(id);
-        if (opt.isPresent()) {
-            Certificado c = opt.get();
-            c.setStatus(Status.ATIVO);
-            c.setDataRevogacao(null);
-            c.setDataEmissao(LocalDateTime.now());
-            return certificadoRepository.save(c);
-        }
-        throw new RuntimeException("Certificado não encontrado");
+        Certificado c = certificadoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Certificado não encontrado"));
+        c.setStatus(Status.ATIVO);
+        c.setDataRevogacao(null);
+        c.setDataEmissao(LocalDateTime.now());
+        return certificadoRepository.save(c);
     }
 
-    public Certificado atualizar(Long id, CertificadoDTO dto) {
-        Certificado certificado = certificadoRepository.findById(id)
+    // =================== Atualizar ===================
+    public Certificado atualizar(Long id, CertificadoRequestDTO dto) {
+        Certificado c = certificadoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Certificado não encontrado"));
 
-        if (dto.getEnderecoTransacao() != null) {
-            certificado.setEnderecoTransacao(dto.getEnderecoTransacao());
-        }
+        // Só permite atualizar campos seguros
+        if (dto.getTipoParticipacao() != null) c.setTipoParticipacao(dto.getTipoParticipacao());
+        if (dto.getCargaHoraria() > 0) c.setCargaHoraria(dto.getCargaHoraria());
 
-        if (dto.getHashBlockchain() != null) {
-            certificado.setHashBlockchain(dto.getHashBlockchain());
-        }
+        return certificadoRepository.save(c);
+    }
 
-        if (dto.getStatus() != null) {
-            certificado.setStatus(dto.getStatus());
-            if (dto.getStatus() == Status.REVOGADO) {
-                certificado.setDataRevogacao(LocalDateTime.now());
-            } else if (dto.getStatus() == Status.ATIVO) {
-                certificado.setDataRevogacao(null);
-            }
-        }
-
-        // Atualizar outras propriedades se necessário
-
-        return certificadoRepository.save(certificado);
+    // =================== Método simulado para blockchain ===================
+    private String enviarParaBlockchain(String hash) {
+        // Aqui você chamaria a API blockchain real
+        return "tx_" + hash.substring(0, 10); // Simula TxID
     }
 }

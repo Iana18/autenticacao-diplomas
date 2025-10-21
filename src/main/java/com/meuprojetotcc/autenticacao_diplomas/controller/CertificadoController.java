@@ -1,71 +1,131 @@
 package com.meuprojetotcc.autenticacao_diplomas.controller;
 
 import com.meuprojetotcc.autenticacao_diplomas.model.certificado.Certificado;
-import com.meuprojetotcc.autenticacao_diplomas.model.certificado.CertificadoDTO;
+import com.meuprojetotcc.autenticacao_diplomas.model.certificado.CertificadoRequestDTO;
+import com.meuprojetotcc.autenticacao_diplomas.model.certificado.CertificadoResponseDTO;
 import com.meuprojetotcc.autenticacao_diplomas.service.CertificadoService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/certificados")
+@RequestMapping("/api/certificados")
+@CrossOrigin(origins = "*")
 public class CertificadoController {
 
-    private final CertificadoService service;
+    private final CertificadoService certificadoService;
 
-    public CertificadoController(CertificadoService service) {
-        this.service = service;
+    public CertificadoController(CertificadoService certificadoService) {
+        this.certificadoService = certificadoService;
     }
 
-    @PostMapping("/registrar")
-    public ResponseEntity<Certificado> registrar(@RequestBody CertificadoDTO dto) {
-        Certificado criado = service.registrarCertificado(dto);
-        return ResponseEntity.ok(criado);
-    }
-
-    @PutMapping("/atualizar/{id}")
-    public ResponseEntity<Certificado> atualizar(@PathVariable Long id, @RequestBody CertificadoDTO dto) {
+    // =================== Criar ===================
+    @PostMapping
+    public ResponseEntity<?> registrar(@RequestBody CertificadoRequestDTO dto) {
         try {
-            Certificado atualizado = service.atualizar(id, dto);
-            return ResponseEntity.ok(atualizado);
+            Certificado certificado = certificadoService.registrarCertificado(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(mapToResponseDTO(certificado));
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro interno: " + e.getMessage());
         }
     }
 
-    @PutMapping("/revogar/{id}")
-    public ResponseEntity<Certificado> revogar(@PathVariable Long id) {
-        try {
-            Certificado revogado = service.revogar(id);
-            return ResponseEntity.ok(revogado);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @PutMapping("/emitir/{id}")
-    public ResponseEntity<Certificado> emitir(@PathVariable Long id) {
-        try {
-            Certificado emitido = service.reemitir(id);
-            return ResponseEntity.ok(emitido);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
+    // =================== Listar todos ===================
     @GetMapping
-    public ResponseEntity<List<Certificado>> listarTodos() {
-        List<Certificado> certificados = service.verTodos();
-        return ResponseEntity.ok(certificados);
+    public ResponseEntity<?> listarTodos() {
+        try {
+            List<Certificado> lista = certificadoService.verTodos();
+            List<CertificadoResponseDTO> responses = lista.stream()
+                    .map(this::mapToResponseDTO)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(responses);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao listar certificados: " + e.getMessage());
+        }
     }
 
+    // =================== Buscar por estudante ===================
     @GetMapping("/estudante/{id}")
-    public ResponseEntity<List<Certificado>> porEstudante(@PathVariable Long id) {
-        List<Certificado> certificados = service.verPorEstudante(id);
-        if (certificados == null || certificados.isEmpty()) {
-            return ResponseEntity.noContent().build();
+    public ResponseEntity<?> listarPorEstudante(@PathVariable Long id) {
+        try {
+            List<Certificado> lista = certificadoService.verPorEstudante(id);
+            if (lista == null || lista.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Nenhum certificado encontrado para o estudante ID " + id);
+            }
+            List<CertificadoResponseDTO> responses = lista.stream()
+                    .map(this::mapToResponseDTO)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(responses);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro interno: " + e.getMessage());
         }
-        return ResponseEntity.ok(certificados);
+    }
+
+    // =================== Revogar ===================
+    @PutMapping("/{id}/revogar")
+    public ResponseEntity<?> revogar(@PathVariable Long id) {
+        try {
+            Certificado c = certificadoService.revogar(id);
+            return ResponseEntity.ok(mapToResponseDTO(c));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao revogar certificado: " + e.getMessage());
+        }
+    }
+
+    // =================== Reemitir ===================
+    @PutMapping("/{id}/reemitir")
+    public ResponseEntity<?> reemitir(@PathVariable Long id) {
+        try {
+            Certificado c = certificadoService.reemitir(id);
+            return ResponseEntity.ok(mapToResponseDTO(c));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao reemitir certificado: " + e.getMessage());
+        }
+    }
+
+    // =================== Atualizar ===================
+    @PutMapping("/{id}")
+    public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody CertificadoRequestDTO dto) {
+        try {
+            Certificado c = certificadoService.atualizar(id, dto);
+            return ResponseEntity.ok(mapToResponseDTO(c));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao atualizar certificado: " + e.getMessage());
+        }
+    }
+
+    // =================== Mapper ===================
+    private CertificadoResponseDTO mapToResponseDTO(Certificado c) {
+        CertificadoResponseDTO dto = new CertificadoResponseDTO();
+        dto.setId(c.getId());
+        dto.setEstudanteNome(c.getEstudante().getNomeCompleto());
+        dto.setCursoNome(c.getCurso().getNome());
+        dto.setInstituicaoNome(c.getInstituicao().getNome());
+        dto.setCriadoPorNome(c.getCriadoPor().getNome());
+        dto.setTipoParticipacao(c.getTipoParticipacao());
+        dto.setCargaHoraria(c.getCargaHoraria());
+        dto.setDataEmissao(c.getDataEmissao());
+        dto.setDataRevogacao(c.getDataRevogacao());
+        dto.setStatus(c.getStatus().toString());
+        dto.setHashBlockchain(c.getHashBlockchain());
+        dto.setEnderecoTransacao(c.getEnderecoTransacao());
+        return dto;
     }
 }

@@ -1,165 +1,56 @@
 package com.meuprojetotcc.autenticacao_diplomas.model.certificado;
 
+
+
 import com.meuprojetotcc.autenticacao_diplomas.model.Curso.Curso;
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
 import com.meuprojetotcc.autenticacao_diplomas.model.Instituicao.Instituicao;
 import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
-import com.meuprojetotcc.autenticacao_diplomas.model.certificado.Status;
-import jakarta.persistence.*;
-import lombok.*;
-
-import java.time.LocalDateTime;
+import com.meuprojetotcc.autenticacao_diplomas.model.DocumentoAcademico;
+import jakarta.persistence.Entity;
 
 @Entity
-@Table(name = "diplomas")
-//@Getter @Setter @NoArgsConstructor
-public class Certificado {
+public class Certificado extends DocumentoAcademico {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    // Campos específicos de certificado, se houver
+    private String tipoParticipacao; // workshop, curso, palestra
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "estudante_id")
-    private Estudante estudante;
+    private int cargaHoraria;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "curso_id")
-    private Curso curso;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "instituicao_id")
-    private Instituicao instituicao;
-
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "criado_por_id")
-    private User criadoPor;
-
-    @Column(nullable = false)
-    private LocalDateTime dataEmissao = LocalDateTime.now();
-
-    private LocalDateTime dataRevogacao;  // Null se ativo
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Status status = Status.ATIVO;
-
-    private String enderecoTransacao;
-
-    private String hashBlockchain;
-
-    // Método para revogar o certificado
-    public void revogar() {
-        this.status = Status.REVOGADO;
-        this.dataRevogacao = LocalDateTime.now();
-    }
-
-    // Método para reemitir o certificado (reactivar)
-    public void reemitir() {
-        this.status = Status.ATIVO;
-        this.dataRevogacao = null;
-        this.dataEmissao = LocalDateTime.now();
-    }
     public Certificado() {
-        // construtor vazio necessário para JPA e para usar new Certificado()
-    }
-    public Certificado(CertificadoDTO dados, Estudante estudante, Curso curso, Instituicao instituicao) {
-        this.estudante = estudante;
-        this.curso = curso;
-        this.instituicao = instituicao;
-      //  this.us = user;
-        this.dataEmissao = LocalDateTime.now();
-        //this.status = "ativo";
-        this.hashBlockchain = dados.getHashBlockchain();
-        this.enderecoTransacao = dados.getEnderecoTransacao();
+        // Construtor padrão
     }
 
-
-
-
-    // === GETTERS E SETTERS ===
-
-    public long getId() {
-        return id;
+    public Certificado(Estudante estudante, Curso curso, Instituicao instituicao, User criadoPor,
+                       String tipoParticipacao, int cargaHoraria) {
+        this.setEstudante(estudante);
+        this.setCurso(curso);
+        this.setInstituicao(instituicao);
+        this.setCriadoPor(criadoPor);
+        this.setStatus(com.meuprojetotcc.autenticacao_diplomas.model.certificado.Status.ATIVO);
+        this.setDataEmissao(java.time.LocalDateTime.now());
+        this.tipoParticipacao = tipoParticipacao;
+        this.cargaHoraria = cargaHoraria; // Agora recebe do parâmetro
     }
 
-    public void setId(long id) {
-        this.id = id;
+
+    // ===== GETTERS E SETTERS =====
+
+    public String getTipoParticipacao() {
+        return tipoParticipacao;
     }
 
-    public LocalDateTime getDataEmissao() {
-        return dataEmissao;
+    public void setTipoParticipacao(String tipoParticipacao) {
+        this.tipoParticipacao = tipoParticipacao;
     }
 
-    public void setDataEmissao(LocalDateTime dataEmissao) {
-        this.dataEmissao = dataEmissao;
+    public int getCargaHoraria() {
+        return cargaHoraria;
     }
 
-    public Status getStatus() {
-        return status;
+    public void setCargaHoraria(int cargaHoraria) {
+        this.cargaHoraria = cargaHoraria;
     }
-
-    public void setStatus(Status status) {
-        this.status = status;
-    }
-
-    public LocalDateTime getDataRevogacao() {
-        return  dataRevogacao ;
-    }
-
-    public void setDataRevogacao(LocalDateTime  dataRevogacao) {
-        this. dataRevogacao =  dataRevogacao;
-    }
-
-    public String getHashBlockchain() {
-        return hashBlockchain;
-    }
-
-    public void setHashBlockchain(String hashBlockchain) {
-        this.hashBlockchain = hashBlockchain;
-    }
-
-    public String getEnderecoTransacao() {
-        return enderecoTransacao;
-    }
-
-    public void setEnderecoTransacao(String enderecoTransacao) {
-        this.enderecoTransacao = enderecoTransacao;
-    }
-
-    public Estudante getEstudante() {
-        return estudante;
-    }
-
-    public void setEstudante(Estudante estudante) {
-        this.estudante = estudante;
-    }
-
-    public Curso getCurso() {
-        return curso;
-    }
-
-    public void setCurso(Curso curso) {
-        this.curso = curso;
-    }
-
-    public Instituicao getInstituicao() {
-        return instituicao;
-    }
-
-    public void setInstituicao(Instituicao instituicao) {
-        this.instituicao = instituicao;
-    }
-    public User getCriadoPor() {
-        return criadoPor;
-    }
-
-    public void setCriadoPor(User criadoPor) {
-        this.criadoPor = criadoPor;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
+    // Métodos de revogação e reemissão já vêm da classe pai DocumentoAcademico
 }
-

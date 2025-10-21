@@ -10,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/verificacoes")
+@CrossOrigin(origins = "*")
 public class VerificacaoController {
 
     private final VerificacaoService verificacaoService;

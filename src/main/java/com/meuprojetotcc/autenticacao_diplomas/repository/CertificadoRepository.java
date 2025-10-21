@@ -17,6 +17,8 @@ public interface CertificadoRepository extends JpaRepository<Certificado, Long> 
    List<Certificado> findByEstudante(Estudante estudante);
 
     List<Certificado> findByEstudanteId(Long estudanteId);
+    // Buscar certificados por nome do estudante
+    List<Certificado> findByEstudante_NomeCompletoContainingIgnoreCase(String nome);
 
     // Busca por status
     Optional<Certificado> findByStatus(String status);
@@ -26,5 +28,6 @@ public interface CertificadoRepository extends JpaRepository<Certificado, Long> 
 
     // Busca por hash da blockchain (por exemplo, para validação)
     Optional<Certificado> findByHashBlockchain(String hashBlockchain);
+
 
 }

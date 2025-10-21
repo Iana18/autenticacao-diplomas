@@ -2,6 +2,7 @@ package com.meuprojetotcc.autenticacao_diplomas.model.Estudante;
 
 public class LoginEstudanteRequestDto {
     private String numeroMatricula;
+    private String nomeCompleto;
     private String senha;
 
     public String getNumeroMatricula() {
@@ -18,5 +19,13 @@ public class LoginEstudanteRequestDto {
 
     public void setSenha(String senha) {
         this.senha = senha;
+    }
+
+    public String getNomeCompleto() {
+        return nomeCompleto;
+    }
+
+    public void setNomeCompleto(String nomeCompleto) {
+        this.nomeCompleto = nomeCompleto;
     }
 }

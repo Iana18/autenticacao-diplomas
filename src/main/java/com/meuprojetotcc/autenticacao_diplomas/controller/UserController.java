@@ -11,12 +11,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/usuarios")
+@CrossOrigin(origins = "*")
 public class UserController {
 
     @Autowired
     private UserService userService;
 
-    @PostMapping
+    @PostMapping("/criar")
     public ResponseEntity<UserResponseDto> createUser(@RequestBody UserDto userDto) {
         return ResponseEntity.ok(userService.create(userDto));
     }
