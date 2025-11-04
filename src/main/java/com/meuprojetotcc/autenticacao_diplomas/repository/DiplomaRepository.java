@@ -18,6 +18,8 @@ public interface DiplomaRepository extends JpaRepository<Diploma, Long> {
 
     List<Diploma> findByEstudante_NumeroMatricula(String numeroMatricula);
     // Retorna todos os diplomas de um estudante específico
+    Optional<Diploma> findByHashBlockchainAndEstudante_NumeroMatricula(String hashBlockchain, String numeroMatricula);
+
 
 
     // Verifica se existe pelo menos um diploma vinculado a um estudante com esse número de matrícula

@@ -1,7 +1,6 @@
 package com.meuprojetotcc.autenticacao_diplomas.model.certificado;
 
-
-
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.meuprojetotcc.autenticacao_diplomas.model.Curso.Curso;
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
 import com.meuprojetotcc.autenticacao_diplomas.model.Instituicao.Instituicao;
@@ -17,6 +16,13 @@ public class Certificado extends DocumentoAcademico {
 
     private int cargaHoraria;
 
+
+
+    @Override
+    @JsonBackReference
+    public Estudante getEstudante() {
+        return super.getEstudante();
+    }
 
     public Certificado() {
         // Construtor padrão

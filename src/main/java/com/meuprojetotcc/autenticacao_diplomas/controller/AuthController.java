@@ -1,30 +1,31 @@
 package com.meuprojetotcc.autenticacao_diplomas.controller;
 
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
+import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.EstudanteDto;
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.LoginEstudanteRequestDto;
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.RegistroEstudanteRequestDto;
 import com.meuprojetotcc.autenticacao_diplomas.model.user.LoginRequestUserDto;
 import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
-import com.meuprojetotcc.autenticacao_diplomas.model.user.Role;
+import com.meuprojetotcc.autenticacao_diplomas.model.user.UserDto;
 import com.meuprojetotcc.autenticacao_diplomas.model.user.UserResponseDto;
 import com.meuprojetotcc.autenticacao_diplomas.repository.DiplomaRepository;
 import com.meuprojetotcc.autenticacao_diplomas.repository.EstudanteRepository;
 import com.meuprojetotcc.autenticacao_diplomas.repository.UserRepository;
+import com.meuprojetotcc.autenticacao_diplomas.seguranca.CustomUserDetailsService;
 import com.meuprojetotcc.autenticacao_diplomas.seguranca.JwtResponseDto;
 import com.meuprojetotcc.autenticacao_diplomas.seguranca.JwtUtil;
-import com.meuprojetotcc.autenticacao_diplomas.utils.TextoUtils;
+import com.meuprojetotcc.autenticacao_diplomas.seguranca.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -41,67 +42,76 @@ public class AuthController {
     private EstudanteRepository estudanteRepository;
 
     @Autowired
-    private DiplomaRepository diplomaRepository;
+    private CustomUserDetailsService customUserDetailsService;
+
+
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired
+    private DiplomaRepository diplomaRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // =================== Login Admin, Emissor e Ministério ===================
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequestUserDto loginRequest) {
+    // ===================== LOGIN =====================
+
+    // Login para usuário normal
+    @PostMapping("/login-user")
+    public ResponseEntity<?> loginUser(@RequestBody LoginRequestUserDto request) {
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getSenha())
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getSenha())
             );
-        } catch (Exception e) {
+        } catch (BadCredentialsException e) {
             return ResponseEntity.status(401).body("Credenciais inválidas");
         }
 
-        User user = userRepository.findByEmail(loginRequest.getEmail())
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(request.getEmail());
 
-        String token = jwtUtil.generateToken(user.getEmail(), "ROLE_" + user.getRole().name());
+        String token = jwtUtil.generateToken(userDetails);
 
-        return ResponseEntity.ok(new JwtResponseDto(token, "ROLE_" + user.getRole().name()));
+        String role = "USER";
+        if (userDetails instanceof User u) {
+            role = u.getRole().name();
+        }
+
+        return ResponseEntity.ok(new JwtResponseDto(token, role));
     }
 
-    // =================== Login Estudante ===================
-
+    // Login para estudante
     @PostMapping("/login-estudante")
-    public ResponseEntity<?> loginEstudante(@RequestBody Estudante loginRequest) {
-        Optional<Estudante> estudanteOpt = estudanteRepository.findByNumeroMatricula(loginRequest.getNumeroMatricula());
-
-        if (estudanteOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("Número de matrícula não encontrado.");
+    public ResponseEntity<?> loginEstudante(@RequestBody LoginEstudanteRequestDto request) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getNumeroMatricula(), request.getSenha())
+            );
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.status(401).body("Credenciais inválidas");
         }
 
-        Estudante estudante = estudanteOpt.get();
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(request.getNumeroMatricula());
 
-        if (!estudante.getSenha().equals(loginRequest.getSenha()) ||
-                !estudante.getNomeCompleto().equalsIgnoreCase(loginRequest.getNomeCompleto())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("Nome ou senha incorretos.");
-        }
+        String token = jwtUtil.generateToken(userDetails);
 
-        // Se tudo certo, retorna o estudante e seus diplomas
-        Map<String, Object> resposta = new HashMap<>();
-        resposta.put("nome", estudante.getNomeCompleto());
-        resposta.put("numeroMatricula", estudante.getNumeroMatricula());
-        resposta.put("id", estudante.getId());
+        boolean possuiDiploma = diplomaRepository.existsByEstudante_NumeroMatricula(request.getNumeroMatricula());
 
-        return ResponseEntity.ok(resposta);
+        Map<String, Object> response = new HashMap<>();
+        response.put("token", token);
+        response.put("role", "ESTUDANTE");
+        response.put("possuiDiploma", possuiDiploma);
+
+        return ResponseEntity.ok(response);
     }
 
 
-
+    // ===================== REGISTRO =====================
     @PostMapping("/registro-estudante")
     public ResponseEntity<?> registrarEstudante(@RequestBody RegistroEstudanteRequestDto request) {
-
         if (estudanteRepository.existsByNumeroMatricula(request.getNumeroMatricula())) {
-            return ResponseEntity.badRequest().body("Estudante já cadastrado com este número de matrícula");
+            return ResponseEntity.badRequest().body("Número de matrícula já cadastrado");
+        }
+        if (estudanteRepository.existsByEmail(request.getEmail())) {
+            return ResponseEntity.badRequest().body("Email já cadastrado");
         }
 
         Estudante estudante = new Estudante();
@@ -114,33 +124,43 @@ public class AuthController {
 
         estudanteRepository.save(estudante);
 
-        return ResponseEntity.ok("Estudante registrado com sucesso!");
+        // Retorna apenas DTO seguro, sem expor senha ou listas
+        EstudanteDto estudanteDto = new EstudanteDto();
+        estudanteDto.setId(estudante.getId());
+        estudanteDto.setNomeCompleto(estudante.getNomeCompleto());
+        estudanteDto.setEmail(estudante.getEmail());
+        estudanteDto.setNumeroMatricula(estudante.getNumeroMatricula());
+        estudanteDto.setDataNascimento(estudante.getDataNascimento());
+        estudanteDto.setGenero(estudante.getGenero());
+
+        return ResponseEntity.ok(estudanteDto);
     }
 
 
-    // =================== Registrar Usuário (somente Admin) ===================
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/registro-user")
-    public ResponseEntity<?> registrarUsuario(@RequestBody UserResponseDto userRequestDto) {
-        if (userRepository.existsByEmail(userRequestDto.getEmail())) {
+    public ResponseEntity<?> registrarUsuario(@RequestBody UserDto userDto) {
+        if (userRepository.existsByEmail(userDto.getEmail())) {
             return ResponseEntity.badRequest().body("Email já cadastrado");
         }
 
         User user = new User();
-        user.setNome(userRequestDto.getNome());
-        user.setApelido(userRequestDto.getApelido());
-        user.setEmail(userRequestDto.getEmail());
-        user.setSenha(passwordEncoder.encode(userRequestDto.getSenha()));
-        user.setRole(userRequestDto.getRole()); // Pode ser ADMIN, EMISSOR ou MINISTERIO
+        user.setNome(userDto.getNome());
+        user.setApelido(userDto.getApelido());
+        user.setEmail(userDto.getEmail());
+        user.setSenha(passwordEncoder.encode(userDto.getSenha()));
+        user.setRole(userDto.getRole());
 
         userRepository.save(user);
 
-        return ResponseEntity.ok(new UserResponseDto(user));
+        return ResponseEntity.ok(new UserResponseDto(user)); // ✅ Retornando DTO seguro
     }
+
+
 
     // =================== Método para verificar diploma de estudante (placeholder) ===================
     private boolean verificarDiplomaParaMatricula(String numeroMatricula) {
         // TODO: Implementar consulta real ao repositório/serviço de diplomas
-        return true; // Por enquanto assume que sempre tem diploma
+        return diplomaRepository.existsByEstudante_NumeroMatricula(numeroMatricula);
     }
+
 }

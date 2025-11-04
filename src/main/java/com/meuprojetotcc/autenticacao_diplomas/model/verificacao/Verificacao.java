@@ -1,6 +1,7 @@
 package com.meuprojetotcc.autenticacao_diplomas.model.verificacao;
 
 import com.meuprojetotcc.autenticacao_diplomas.model.certificado.Certificado;
+import com.meuprojetotcc.autenticacao_diplomas.model.diploma.Diploma;
 import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -20,7 +21,9 @@ public class Verificacao {
     @ManyToOne(optional = false)
     @JoinColumn(name = "verificador_id")
     private User verificador;
-
+    @ManyToOne
+    @JoinColumn(name = "diploma_id")
+    private Diploma diploma;
     @Column(nullable = false)
     private LocalDateTime dataVerificacao;
 
@@ -57,6 +60,14 @@ public class Verificacao {
 
     public void setVerificador(User verificador) {
         this.verificador = verificador;
+    }
+
+    public Diploma getDiploma() {
+        return diploma;
+    }
+
+    public void setDiploma(Diploma diploma) {
+        this.diploma = diploma;
     }
 
     public LocalDateTime getDataVerificacao() {

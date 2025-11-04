@@ -12,7 +12,12 @@ import com.meuprojetotcc.autenticacao_diplomas.repository.EstudanteRepository;
 import com.meuprojetotcc.autenticacao_diplomas.repository.CursoRepository;
 import com.meuprojetotcc.autenticacao_diplomas.repository.InstituicaoRepository;
 import com.meuprojetotcc.autenticacao_diplomas.repository.UserRepository;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import java.util.Base64;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -40,42 +45,69 @@ public class DiplomaService {
         this.userRepository = userRepository;
     }
 
+
+
+    // =================== Método para gerar número único ===================
+    private String gerarNumeroDiplomaUnico() {
+        long timestamp = System.currentTimeMillis();
+        int ano = LocalDate.now().getYear();
+        return "DIPL-" + ano + "-" + timestamp;
+    }
+
+
     // =================== Criar Diploma ===================
-    public Diploma criarDiploma(DiplomaRequestDTO dto) {
+    public Diploma criarDiploma(DiplomaRequestDTO dto,
+                                MultipartFile carimbo,
+                                MultipartFile assinatura,
+                                UserDetails userDetails) {
         try {
-            Estudante estudante = estudanteRepository.findById(dto.getEstudanteId())
-                    .orElseThrow(() -> new RuntimeException("Estudante não encontrado"));
-            Curso curso = cursoRepository.findById(dto.getCursoId())
-                    .orElseThrow(() -> new RuntimeException("Curso não encontrado"));
-            Instituicao instituicao = instituicaoRepository.findById(dto.getInstituicaoId())
-                    .orElseThrow(() -> new RuntimeException("Instituição não encontrada"));
-            User criadoPor = userRepository.findById(dto.getCriadoPorId())
-                    .orElseThrow(() -> new RuntimeException("Usuário criador não encontrado"));
+            // Usuário logado
+            User criadoPor = userRepository.findByEmail(userDetails.getUsername())
+                    .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+            Estudante estudante = dto.getEstudante();
+            Curso curso = dto.getCurso();
+            Instituicao instituicao = dto.getInstituicao();
+
+            if (estudante == null || curso == null || instituicao == null) {
+                throw new RuntimeException("Estudante, curso ou instituição não podem ser nulos");
+            }
 
             Diploma diploma = new Diploma();
             diploma.setEstudante(estudante);
             diploma.setCurso(curso);
             diploma.setInstituicao(instituicao);
-            diploma.setCriadoPor(criadoPor);
+            diploma.setCriadoPor(criadoPor); // agora vem do token
             diploma.setTipoDiploma(dto.getTipoDiploma());
             diploma.setNotaFinal(dto.getNotaFinal());
             diploma.setCargaHoraria(dto.getCargaHoraria());
-            diploma.setNumeroDiploma(dto.getNumeroDiploma());
             diploma.setRegistroMinisterio(dto.getRegistroMinisterio());
             diploma.setGrauAcademico(dto.getGrauAcademico());
-            diploma.setDataConclusao(dto.getDataConclusao().atStartOfDay()); // ✅ converte para LocalDateTime
+            diploma.setDataConclusao(dto.getDataConclusao().atStartOfDay());
             diploma.setDataEmissao(LocalDateTime.now());
-            diploma.setStatus(Status.ATIVO);
+            diploma.setStatus(Status.PENDENTE);
 
-            // Gera hash blockchain e endereço de transação automaticamente
+            // Número de diploma único
+            diploma.setNumeroDiploma(gerarNumeroDiplomaUnico());
+
+            // Carimbo e assinatura
+            if (carimbo != null && !carimbo.isEmpty()) {
+                diploma.setCarimboInstituicao(Base64.getEncoder().encodeToString(carimbo.getBytes()));
+            }
+            if (assinatura != null && !assinatura.isEmpty()) {
+                diploma.setAssinaturaInstituicao(Base64.getEncoder().encodeToString(assinatura.getBytes()));
+            }
+
             diploma.gerarHashBlockchain();
             diploma.setEnderecoTransacao("tx_" + System.currentTimeMillis());
 
             return diplomaRepository.save(diploma);
+
         } catch (Exception e) {
             throw new RuntimeException("Erro ao criar diploma: " + e.getMessage(), e);
         }
     }
+
 
     // =================== Listar Todos ===================
     public List<Diploma> listarTodos() {
@@ -144,4 +176,27 @@ public class DiplomaService {
     public List<Diploma> buscarPorNumeroMatricula(String numeroMatricula) {
         return diplomaRepository.findByEstudante_NumeroMatricula(numeroMatricula);
     }
+
+    // =================== Buscar por hash E número de matrícula ===================
+    public Optional<Diploma> buscarPorHashEEstudante(String hashBlockchain, String numeroMatricula) {
+        return diplomaRepository.findByHashBlockchainAndEstudante_NumeroMatricula(hashBlockchain, numeroMatricula);
+    }
+
+    // =================== Aprovar Diploma ===================
+    public Diploma aprovar(Long id) {
+        Diploma diploma = diplomaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Diploma não encontrado"));
+
+        if (diploma.getStatus() != Status.PENDENTE) {
+            throw new RuntimeException("Somente diplomas pendentes podem ser aprovados");
+        }
+
+        diploma.setStatus(Status.ATIVO);
+        diploma.setDataEmissao(LocalDateTime.now());
+        diploma.gerarHashBlockchain();
+        diploma.setEnderecoTransacao("tx_" + System.currentTimeMillis());
+
+        return diplomaRepository.save(diploma);
+    }
+
 }

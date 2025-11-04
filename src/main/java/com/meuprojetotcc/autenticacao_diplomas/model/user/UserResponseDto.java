@@ -8,7 +8,7 @@ public class UserResponseDto {
     private String nome;
     private String apelido;
     private String email;
-    private String senha;
+
     private Role role;
 
     public UserResponseDto() {}
@@ -19,11 +19,16 @@ public class UserResponseDto {
         this.apelido = user.getApelido();
         this.email = user.getEmail();
         this.role = user.getRole();
-        this.senha = user.getSenha();
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
@@ -42,6 +47,5 @@ public class UserResponseDto {
         this.role = role;
     }
 
-    public String getSenha() { return senha; }
-    public void setSenha(String senha) { this.senha = senha; }
+
 }

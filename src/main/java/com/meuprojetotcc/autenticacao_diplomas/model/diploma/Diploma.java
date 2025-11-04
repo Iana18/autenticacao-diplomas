@@ -1,11 +1,13 @@
 package com.meuprojetotcc.autenticacao_diplomas.model.diploma;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.meuprojetotcc.autenticacao_diplomas.model.Curso.Curso;
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
 import com.meuprojetotcc.autenticacao_diplomas.model.Instituicao.Instituicao;
 import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
 import com.meuprojetotcc.autenticacao_diplomas.model.DocumentoAcademico;
 import com.meuprojetotcc.autenticacao_diplomas.model.certificado.Status;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 
 import java.time.LocalDateTime;
@@ -16,10 +18,18 @@ public class Diploma extends DocumentoAcademico {
     private String tipoDiploma;
     private Double notaFinal;
     private int cargaHoraria;
+    // Diploma.java
+    @Column(unique = true, nullable = false)
     private String numeroDiploma;
     private String registroMinisterio;
-    private GrauAcademico grauAcademico; // Enum: BACHAREL, LICENCIATURA, MESTRE, DOUTOR
+    private GrauAcademico grauAcademico;
     private LocalDateTime dataConclusao;
+
+    @Override
+    @JsonBackReference
+    public Estudante getEstudante() {
+        return super.getEstudante();
+    }
 
     public Diploma() {}
 

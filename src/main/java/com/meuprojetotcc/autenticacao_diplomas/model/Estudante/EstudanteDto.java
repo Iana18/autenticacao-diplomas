@@ -12,6 +12,7 @@ public class EstudanteDto {
     private LocalDate dataNascimento;
     private String genero;
 
+
     // Getters e setters
 
     public Long getId() {

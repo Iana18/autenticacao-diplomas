@@ -1,13 +1,18 @@
 package com.meuprojetotcc.autenticacao_diplomas.model.diploma;
 
+import com.meuprojetotcc.autenticacao_diplomas.model.Curso.Curso;
+import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
+import com.meuprojetotcc.autenticacao_diplomas.model.Instituicao.Instituicao;
+import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
+
 import java.time.LocalDate;
 
 public class DiplomaRequestDTO {
 
-    private Long estudanteId;
-    private Long cursoId;
-    private Long instituicaoId;
-    private Long criadoPorId;
+    private Estudante estudante;
+    private Curso curso;
+    private Instituicao instituicao;
+    private User criadoPor;
 
     private String tipoDiploma;
     private Double notaFinal;
@@ -16,38 +21,61 @@ public class DiplomaRequestDTO {
     private String registroMinisterio;
     private GrauAcademico grauAcademico; // pode ser ENUM: BACHAREL, LICENCIATURA, MESTRE, DOUTOR
     private LocalDate dataConclusao;
+    private String assinaturaInstituicao; // assinatura digital da IES
+    private String carimboInstituicao;    // carimbo digital ou CID
 
     // ===== GETTERS E SETTERS =====
-    public Long getEstudanteId() {
-        return estudanteId;
+
+
+    public DiplomaRequestDTO() {}
+
+    public String getCarimboInstituicao() {
+        return carimboInstituicao;
     }
 
-    public void setEstudanteId(Long estudanteId) {
-        this.estudanteId = estudanteId;
+    public void setCarimboInstituicao(String carimboInstituicao) {
+        this.carimboInstituicao = carimboInstituicao;
     }
 
-    public Long getCursoId() {
-        return cursoId;
+    public String getAssinaturaInstituicao() {
+        return assinaturaInstituicao;
     }
 
-    public void setCursoId(Long cursoId) {
-        this.cursoId = cursoId;
+    public void setAssinaturaInstituicao(String assinaturaInstituicao) {
+        this.assinaturaInstituicao = assinaturaInstituicao;
     }
 
-    public Long getInstituicaoId() {
-        return instituicaoId;
+    public Estudante getEstudante() {
+        return estudante;
     }
 
-    public void setInstituicaoId(Long instituicaoId) {
-        this.instituicaoId = instituicaoId;
+    public void setEstudante(Estudante estudante) {
+        this.estudante = estudante;
     }
 
-    public Long getCriadoPorId() {
-        return criadoPorId;
+
+    public Curso getCurso() {
+        return curso;
     }
 
-    public void setCriadoPorId(Long criadoPorId) {
-        this.criadoPorId = criadoPorId;
+    public void setCurso(Curso curso) {
+        this.curso = curso;
+    }
+
+    public Instituicao getInstituicao() {
+        return instituicao;
+    }
+
+    public void setInstituicao(Instituicao instituicao) {
+        this.instituicao = instituicao;
+    }
+
+    public User getCriadoPor() {
+        return criadoPor;
+    }
+
+    public void setCriadoPor(User criadoPor) {
+        this.criadoPor = criadoPor;
     }
 
     public String getTipoDiploma() {

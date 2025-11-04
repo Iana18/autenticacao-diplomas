@@ -20,8 +20,8 @@ public interface EstudanteRepository extends JpaRepository<Estudante, Long> {
     boolean existsByEmail(String email);
     Optional<Estudante> findByNomeCompletoAndNumeroMatricula(String nomeCompleto, String numeroMatricula);
 
-
     boolean existsByNumeroMatricula(String numeroMatricula);
+
 
 
 
