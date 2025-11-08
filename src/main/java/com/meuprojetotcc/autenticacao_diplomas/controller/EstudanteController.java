@@ -1,7 +1,8 @@
 package com.meuprojetotcc.autenticacao_diplomas.controller;
 
-import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.AlterarSenhaDTO;
+import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.AtivacaoRequestDto;
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
+import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.EstudanteDto;
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.LoginEstudanteRequestDto;
 import com.meuprojetotcc.autenticacao_diplomas.seguranca.JwtResponseDto;
 import com.meuprojetotcc.autenticacao_diplomas.seguranca.JwtUtil;
@@ -30,18 +31,25 @@ public class EstudanteController {
     }
 
     // ================= Cadastro pelo emissor (sem senha) =================
+    // 1) Cadastro pelo emissor (só ADMIN deve acessar esse endpoint)
     @PostMapping("/cadastrar-emissor")
-    public ResponseEntity<?> cadastrarPeloEmissor(@RequestBody Estudante estudante) {
-        if (estudanteService.existsByNumeroMatricula(estudante.getNumeroMatricula())) {
-            return ResponseEntity.badRequest().body("Número de matrícula já cadastrado");
+    public ResponseEntity<?> cadastrarPeloEmissor(@RequestBody EstudanteDto dto) {
+        try {
+            Estudante criado = estudanteService.cadastrarEstudantePeloEmissor(dto);
+            return ResponseEntity.ok(criado);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
-        if (estudanteService.existsByEmail(estudante.getEmail())) {
-            return ResponseEntity.badRequest().body("Email já cadastrado");
-        }
+    }
 
-        // Usa o método correto do service
-        Estudante criado = estudanteService.cadastrarEstudantePeloEmissor(estudante);
-        return ResponseEntity.ok(criado);
+
+    // 2) Ativação: endpoint público que o estudante acessa via link
+    // Exemplo: POST /estudantes/ativar?token=abc123  body: { "senha": "novaSenha123" }
+    @PostMapping("/ativar")
+    public ResponseEntity<?> ativarConta(@RequestParam String token, @RequestBody AtivacaoRequestDto dto) {
+        boolean ok = estudanteService.ativarConta(token, dto.getSenha());
+        if (!ok) return ResponseEntity.badRequest().body("Token inválido ou conta já ativada");
+        return ResponseEntity.ok("Conta ativada com sucesso. Você já pode fazer login.");
     }
 
     // ================= Registro público (com senha) =================
@@ -79,7 +87,7 @@ public class EstudanteController {
     // ================= Alterar senha =================
     @PutMapping("/{id}/senha")
     public ResponseEntity<String> alterarSenha(@PathVariable Long id,
-                                               @RequestBody AlterarSenhaDTO dto) {
+                                               @RequestBody AtivacaoRequestDto dto) {
         try {
             estudanteService.alterarSenha(id, dto);
             return ResponseEntity.ok("Senha alterada com sucesso");

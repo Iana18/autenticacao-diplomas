@@ -13,4 +13,5 @@ public interface InstituicaoRepository extends JpaRepository<Instituicao, Long> 
     List<Instituicao> findByNomeContainingIgnoreCase(String nome);
 
     boolean existsByNome(String nome);
+    Optional<Instituicao> findByNomeIgnoreCase(String nome);
 }

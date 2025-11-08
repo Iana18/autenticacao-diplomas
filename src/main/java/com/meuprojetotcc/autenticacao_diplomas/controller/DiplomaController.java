@@ -43,7 +43,6 @@ public class DiplomaController {
             @RequestPart(value = "carimbo", required = false) MultipartFile carimbo,
             @RequestPart(value = "assinatura", required = false) MultipartFile assinatura,
             @RequestHeader("Authorization") String tokenHeader) {
-
         try {
             // Extrair token
             String token = tokenHeader.replace("Bearer ", "");

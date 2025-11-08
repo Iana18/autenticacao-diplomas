@@ -14,4 +14,5 @@ public interface CursoRepository  extends JpaRepository<Curso, Long> {
     // Buscar cursos que contenham parte do nome, ignorando maiúsculas/minúsculas
     List<Curso> findByNomeContainingIgnoreCase(String nome);
     Optional<Curso> findById(Long id);
+    Optional<Curso> findByNomeIgnoreCase(String nome);
 }

@@ -12,9 +12,11 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "estudantes")
@@ -29,7 +31,7 @@ public class Estudante implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String senha;
 
     @Column(name = "numero_matricula", unique = true, nullable = false)
@@ -38,6 +40,16 @@ public class Estudante implements UserDetails {
     private LocalDate dataNascimento;
 
     private String genero;
+
+
+    // Ativação
+    @Column(name = "ativo")
+    private boolean ativo = false;
+
+    @Column(name = "token_ativacao", unique = true)
+    private String tokenAtivacao;
+
+    private LocalDateTime criadoEm = LocalDateTime.now();
 
     // 🔹 Relacionamento com Curso
     @ManyToOne
@@ -71,6 +83,9 @@ public class Estudante implements UserDetails {
         this.genero = genero;
         this.curso = curso;
         this.instituicao = instituicao;
+        this.tokenAtivacao = UUID.randomUUID().toString();
+        this.ativo = false;
+        this.criadoEm = LocalDateTime.now();
     }
 
     // === GETTERS E SETTERS ===
@@ -108,6 +123,29 @@ public class Estudante implements UserDetails {
     public void setCertificados(List<Certificado> certificados) { this.certificados = certificados; }
 
 
+    public boolean isAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(boolean ativo) {
+        this.ativo = ativo;
+    }
+
+    public String getTokenAtivacao() {
+        return tokenAtivacao;
+    }
+
+    public void setTokenAtivacao(String tokenAtivacao) {
+        this.tokenAtivacao = tokenAtivacao;
+    }
+
+    public LocalDateTime getCriadoEm() {
+        return criadoEm;
+    }
+
+    public void setCriadoEm(LocalDateTime criadoEm) {
+        this.criadoEm = criadoEm;
+    }
 
     // === Implementação UserDetails ===
     @Override
