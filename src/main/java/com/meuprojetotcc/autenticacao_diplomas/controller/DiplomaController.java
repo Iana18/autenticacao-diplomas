@@ -5,8 +5,10 @@ import com.meuprojetotcc.autenticacao_diplomas.model.diploma.Diploma;
 import com.meuprojetotcc.autenticacao_diplomas.model.diploma.DiplomaRequestDTO;
 import com.meuprojetotcc.autenticacao_diplomas.model.diploma.DiplomaResponseDTO;
 import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
+import com.meuprojetotcc.autenticacao_diplomas.repository.DiplomaRepository;
 import com.meuprojetotcc.autenticacao_diplomas.repository.UserRepository;
 import com.meuprojetotcc.autenticacao_diplomas.seguranca.JwtUtil;
+import com.meuprojetotcc.autenticacao_diplomas.service.BlockchainService;
 import com.meuprojetotcc.autenticacao_diplomas.service.DiplomaPdfService;
 import com.meuprojetotcc.autenticacao_diplomas.service.DiplomaService;
 import org.springframework.http.HttpHeaders;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -28,34 +31,47 @@ public class DiplomaController {
     private final DiplomaPdfService pdfService;
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
-    public DiplomaController(DiplomaService diplomaService, DiplomaPdfService pdfService,JwtUtil jwtUtil, UserRepository userRepository) {
+    private final BlockchainService blockchainService;
+    private final DiplomaRepository diplomaRepository;
+    public DiplomaController(DiplomaService diplomaService, DiplomaPdfService pdfService,JwtUtil jwtUtil, UserRepository userRepository,
+                             BlockchainService blockchainService,DiplomaRepository diplomaRepository) {
         this.jwtUtil = jwtUtil;
         this.userRepository = userRepository;
         this.diplomaService = diplomaService;
         this.pdfService = pdfService;
+        this.blockchainService= blockchainService;
+        this.diplomaRepository =diplomaRepository;
     }
 
     // =================== Criar Diploma ===================
     // =================== Criar Diploma com arquivos ===================
-    @PostMapping("/com-arquivos")
+    @PostMapping(value = "/com-arquivos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> criarComArquivos(
             @RequestPart("diploma") DiplomaRequestDTO dto,
             @RequestPart(value = "carimbo", required = false) MultipartFile carimbo,
             @RequestPart(value = "assinatura", required = false) MultipartFile assinatura,
             @RequestHeader("Authorization") String tokenHeader) {
+
         try {
-            // Extrair token
+            // 1️⃣ Extrair usuário do token
             String token = tokenHeader.replace("Bearer ", "");
             String username = jwtUtil.extractUsername(token);
-
-            // Buscar usuário logado pelo email do token
             User usuario = userRepository.findByEmail(username)
                     .orElseThrow(() -> new RuntimeException("Usuário não encontrado no token"));
 
-            // Passa o usuário logado para o DTO e Service
+            // 2️⃣ Criar diploma no banco (hash ainda gerado, mas TX ainda não)
             Diploma diploma = diplomaService.criarDiploma(dto, carimbo, assinatura, usuario);
 
-            // Retorna resposta DTO
+            System.out.println("Carimbo recebido: " + (carimbo != null ? carimbo.getOriginalFilename() : "NULL"));
+            System.out.println("Assinatura recebida: " + (assinatura != null ? assinatura.getOriginalFilename() : "NULL"));
+            // 3️⃣ Registrar diploma na blockchain e pegar TX hash real
+            String txHash = blockchainService.registrarDiploma(diploma);
+            diploma.setEnderecoTransacao(txHash);
+
+            // 4️⃣ Salvar novamente para atualizar TX hash
+            diplomaRepository.save(diploma);
+
+            // 5️⃣ Retornar DTO completo
             return ResponseEntity.status(HttpStatus.CREATED).body(mapToResponseDTO(diploma));
 
         } catch (RuntimeException e) {
@@ -65,6 +81,7 @@ public class DiplomaController {
                     .body("Erro interno: " + e.getMessage());
         }
     }
+
 
 
 
@@ -82,6 +99,8 @@ public class DiplomaController {
                     .body("Erro ao listar diplomas: " + e.getMessage());
         }
     }
+
+
 
     // =================== Buscar por estudante ===================
     @GetMapping("/estudante/{id}")
@@ -273,6 +292,25 @@ public class DiplomaController {
     }
 
 
+
+
+    @PostMapping("/registrar-blockchain/{id}")
+    public ResponseEntity<?> registrarDiploma(@PathVariable Long id) {
+        try {
+            Diploma diploma = diplomaService.registrarNaBlockchain(id);
+            return ResponseEntity.ok(Map.of(
+                    "hashBlockchain", diploma.getHashBlockchain(),
+                    "txHash", diploma.getEnderecoTransacao()
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao registrar na blockchain: " + e.getMessage());
+        }
+    }
+
+
     // =================== Mapper para ResponseDTO ===================
     private DiplomaResponseDTO mapToResponseDTO(Diploma d) {
         DiplomaResponseDTO dto = new DiplomaResponseDTO();
@@ -293,6 +331,11 @@ public class DiplomaController {
         dto.setHashBlockchain(d.getHashBlockchain());
         dto.setEnderecoTransacao(d.getEnderecoTransacao());
         dto.setStatus(d.getStatus().toString());
+
+        // ✅ Adicionando assinatura e carimbo exatamente como estão no banco (String Base64)
+        dto.setAssinaturaInstituicao(d.getAssinaturaInstituicao());
+        dto.setCarimboInstituicao(d.getCarimboInstituicao());
+
         return dto;
     }
 }

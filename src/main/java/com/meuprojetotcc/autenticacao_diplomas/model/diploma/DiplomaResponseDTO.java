@@ -26,6 +26,8 @@ public class DiplomaResponseDTO {
         private String status;
         private String hashBlockchain;
         private String enderecoTransacao;
+        private String assinaturaInstituicao; // assinatura digital da IES
+        private String carimboInstituicao;    // carimbo digital ou CID
 
         // ===== GETTERS E SETTERS =====
         public Long getId() { return id; }
@@ -79,6 +81,20 @@ public class DiplomaResponseDTO {
         public String getEnderecoTransacao() { return enderecoTransacao; }
         public void setEnderecoTransacao(String enderecoTransacao) { this.enderecoTransacao = enderecoTransacao; }
 
+        public String getAssinaturaInstituicao() {
+                return assinaturaInstituicao;
+        }
 
+        public void setAssinaturaInstituicao(String assinaturaInstituicao) {
+                this.assinaturaInstituicao = assinaturaInstituicao;
+        }
+
+        public String getCarimboInstituicao() {
+                return carimboInstituicao;
+        }
+
+        public void setCarimboInstituicao(String carimboInstituicao) {
+                this.carimboInstituicao = carimboInstituicao;
+        }
 }
 

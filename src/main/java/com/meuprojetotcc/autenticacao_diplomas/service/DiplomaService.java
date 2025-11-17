@@ -32,8 +32,9 @@ public class DiplomaService {
     private final CursoRepository cursoRepository;
     private final InstituicaoRepository instituicaoRepository;
     private final UserRepository userRepository;
+    private final BlockchainService blockchainService;
 
-    public DiplomaService(DiplomaRepository diplomaRepository,
+    public DiplomaService(DiplomaRepository diplomaRepository, BlockchainService blockchainService,
                           EstudanteRepository estudanteRepository,
                           CursoRepository cursoRepository,
                           InstituicaoRepository instituicaoRepository,
@@ -43,6 +44,7 @@ public class DiplomaService {
         this.cursoRepository = cursoRepository;
         this.instituicaoRepository = instituicaoRepository;
         this.userRepository = userRepository;
+        this.blockchainService= blockchainService;
     }
 
 
@@ -55,13 +57,30 @@ public class DiplomaService {
     }
 
 
+    // =================== Registrar Diploma na Blockchain ===================
+    public Diploma registrarNaBlockchain(Long diplomaId) throws Exception {
+        Diploma diploma = diplomaRepository.findById(diplomaId)
+                .orElseThrow(() -> new RuntimeException("Diploma não encontrado"));
+
+        if (diploma.getStatus() == Status.ATIVO) {
+            throw new RuntimeException("Diploma já registrado na blockchain");
+        }
+
+        // Envia o diploma completo para o smart contract e obtém TX hash real
+        String txHash = blockchainService.registrarDiploma(diploma);
+
+        diploma.setEnderecoTransacao(txHash);
+        diploma.setStatus(Status.ATIVO);
+
+        return diplomaRepository.save(diploma);
+    }
+    // =================== Criar Diploma ===================
     // =================== Criar Diploma ===================
     public Diploma criarDiploma(DiplomaRequestDTO dto,
                                 MultipartFile carimbo,
                                 MultipartFile assinatura,
                                 UserDetails userDetails) {
         try {
-            // Usuário logado
             User criadoPor = userRepository.findByEmail(userDetails.getUsername())
                     .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
@@ -77,7 +96,7 @@ public class DiplomaService {
             diploma.setEstudante(estudante);
             diploma.setCurso(curso);
             diploma.setInstituicao(instituicao);
-            diploma.setCriadoPor(criadoPor); // agora vem do token
+            diploma.setCriadoPor(criadoPor);
             diploma.setTipoDiploma(dto.getTipoDiploma());
             diploma.setNotaFinal(dto.getNotaFinal());
             diploma.setCargaHoraria(dto.getCargaHoraria());
@@ -98,8 +117,11 @@ public class DiplomaService {
                 diploma.setAssinaturaInstituicao(Base64.getEncoder().encodeToString(assinatura.getBytes()));
             }
 
+            // Gera hash do diploma
             diploma.gerarHashBlockchain();
-            diploma.setEnderecoTransacao("tx_" + System.currentTimeMillis());
+
+            // TX hash será gerado apenas ao registrar na blockchain
+            diploma.setEnderecoTransacao(null);
 
             return diplomaRepository.save(diploma);
 
@@ -107,8 +129,6 @@ public class DiplomaService {
             throw new RuntimeException("Erro ao criar diploma: " + e.getMessage(), e);
         }
     }
-
-
     // =================== Listar Todos ===================
     public List<Diploma> listarTodos() {
         return diplomaRepository.findAll();
