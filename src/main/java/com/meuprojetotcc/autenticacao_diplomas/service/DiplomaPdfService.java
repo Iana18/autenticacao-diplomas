@@ -67,9 +67,9 @@ public class DiplomaPdfService {
 
         document.add(new Paragraph("\n\n")); // espaço antes das assinaturas
 
-        // --- Carimbo ---
-        if (diploma.getCarimboInstituicao() != null) {
-            byte[] carimboBytes = Base64.getDecoder().decode(diploma.getCarimboInstituicao());
+        /*--- Carimbo ---
+        if ((Byte) diploma.getCarimboInstituicao() != null) {
+            byte[] carimboBytes = Base64.getDecoder().decode( diploma.getCarimboInstituicao());
             ImageData carimboData = ImageDataFactory.create(carimboBytes);
             Image carimboImg = new Image(carimboData)
                     .scaleToFit(120, 60)
@@ -86,6 +86,8 @@ public class DiplomaPdfService {
                     .setFixedPosition(400, 100);
             document.add(assinaturaImg);
         }
+
+         */
 
         document.close();
         return baos.toByteArray();

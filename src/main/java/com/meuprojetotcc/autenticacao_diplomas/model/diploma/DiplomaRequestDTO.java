@@ -21,27 +21,27 @@ public class DiplomaRequestDTO {
     private String registroMinisterio;
     private GrauAcademico grauAcademico; // pode ser ENUM: BACHAREL, LICENCIATURA, MESTRE, DOUTOR
     private LocalDate dataConclusao;
-    private String assinaturaInstituicao; // assinatura digital da IES
-    private String carimboInstituicao;    // carimbo digital ou CID
+    private byte[] assinaturaInstituicao; // assinatura digital da IES
+    private byte[] carimboInstituicao;    // carimbo digital ou CID
 
     // ===== GETTERS E SETTERS =====
 
 
     public DiplomaRequestDTO() {}
 
-    public String getCarimboInstituicao() {
+    public byte[] getCarimboInstituicao() {
         return carimboInstituicao;
     }
 
-    public void setCarimboInstituicao(String carimboInstituicao) {
+    public void setCarimboInstituicao( byte[] carimboInstituicao) {
         this.carimboInstituicao = carimboInstituicao;
     }
 
-    public String getAssinaturaInstituicao() {
+    public byte[] getAssinaturaInstituicao() {
         return assinaturaInstituicao;
     }
 
-    public void setAssinaturaInstituicao(String assinaturaInstituicao) {
+    public void setAssinaturaInstituicao(byte[] assinaturaInstituicao) {
         this.assinaturaInstituicao = assinaturaInstituicao;
     }
 

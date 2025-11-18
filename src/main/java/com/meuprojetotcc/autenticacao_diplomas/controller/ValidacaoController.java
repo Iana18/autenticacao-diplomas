@@ -15,11 +15,9 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class ValidacaoController {
 
-
     private final ValidacaoService validacaoService;
 
-    // pega a chave secreta do JWT configurada no application.properties
-
+    @Value("${jwt.secret}")
     private String jwtSecret;
 
     public ValidacaoController(ValidacaoService validacaoService) {
@@ -29,8 +27,8 @@ public class ValidacaoController {
     @GetMapping("/diploma")
     public ResponseEntity<?> validar(
             @RequestHeader("Authorization") String token,
-            @RequestParam String hash,
-            @RequestParam String numeroMatricula) {
+            @RequestParam String numeroDiploma,
+            @RequestParam String hash) {
 
         try {
             // remove o prefixo "Bearer "
@@ -47,7 +45,7 @@ public class ValidacaoController {
             Long verificadorId = Long.parseLong(claims.get("id").toString());
 
             // chama o serviço de validação
-            Diploma diploma = validacaoService.validarDiploma(hash, numeroMatricula, verificadorId);
+            Diploma diploma = validacaoService.validarDiploma(numeroDiploma, hash, verificadorId);
 
             // retorna JSON com todos os dados
             return ResponseEntity.ok(Map.of(
@@ -55,7 +53,7 @@ public class ValidacaoController {
                     "mensagem", "Diploma verificado com sucesso.",
                     "dados", Map.of(
                             "nomeEstudante", diploma.getEstudante().getNomeCompleto(),
-                            "numeroMatricula", diploma.getEstudante().getNumeroMatricula(),
+                            "numeroDiploma", diploma.getNumeroDiploma(),
                             "curso", diploma.getCurso().getNome(),
                             "instituicao", diploma.getInstituicao().getNome(),
                             "grauAcademico", diploma.getGrauAcademico().toString(),
@@ -77,6 +75,5 @@ public class ValidacaoController {
                     "mensagem", "Token inválido ou expirado."
             ));
         }
-
     }
 }

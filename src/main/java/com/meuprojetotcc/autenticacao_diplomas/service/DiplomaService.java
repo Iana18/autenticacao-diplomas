@@ -111,10 +111,10 @@ public class DiplomaService {
 
             // Carimbo e assinatura
             if (carimbo != null && !carimbo.isEmpty()) {
-                diploma.setCarimboInstituicao(Base64.getEncoder().encodeToString(carimbo.getBytes()));
+                diploma.setCarimboInstituicao(carimbo.getBytes());
             }
             if (assinatura != null && !assinatura.isEmpty()) {
-                diploma.setAssinaturaInstituicao(Base64.getEncoder().encodeToString(assinatura.getBytes()));
+                diploma.setAssinaturaInstituicao(assinatura.getBytes());
             }
 
             // Gera hash do diploma

@@ -12,6 +12,7 @@ import org.web3j.protocol.exceptions.TransactionException;
 import org.web3j.tx.gas.ContractGasProvider;
 
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Base64;
 
 @Service
@@ -38,33 +39,71 @@ public class BlockchainService {
 
     // Resto do código permanece igual...
     public String registrarDiploma(Diploma diploma) {
+
         try {
-            byte[] numeroDiplomaBytes = stringToBytes(diploma.getNumeroDiploma(), "numeroDiploma");
-            byte[] hashDocumentoBytes = stringToBytes(diploma.getHashBlockchain(), "hashDocumento");
-            byte[] carimboBytes = base64ToBytes(diploma.getCarimboInstituicao(), "carimboInstituicao");
-            byte[] assinaturaBytes = base64ToBytes(diploma.getAssinaturaInstituicao(), "assinaturaInstituicao");
+            // CONVERTE número do diploma para bytes32
+            byte[] numeroDiplomaBytes = toBytes32(diploma.getNumeroDiploma());
+
+            // CONVERTE hash do documento (hex SHA-256) para bytes32
+            byte[] hashDocumentoBytes = hexToBytes32(diploma.getHashBlockchain());
+
+            // HASH do carimbo (resultado é bytes32)
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashCarimbo = digest.digest(diploma.getCarimboInstituicao());
+
+            // Assinatura vai como BYTES COMPLETOS (imagem)
+            byte[] assinaturaBytes = diploma.getAssinaturaInstituicao();
 
             logger.info("Enviando transação para registrar diploma: {}", diploma.getNumeroDiploma());
 
             TransactionReceipt receipt = contrato.registrarDiploma(
-                    numeroDiplomaBytes,
-                    hashDocumentoBytes,
-                    carimboBytes,
-                    assinaturaBytes
+                    numeroDiplomaBytes,     // bytes32
+                    hashDocumentoBytes,     // bytes32
+                    hashCarimbo,            // bytes32
+                    assinaturaBytes         // bytes (dinâmico)
             ).send();
 
             logger.info("Transação concluída. Hash: {}, Status: {}",
                     receipt.getTransactionHash(), receipt.getStatus());
 
             return receipt.getTransactionHash();
-        } catch (TransactionException e) {
-            logger.error("Erro ao enviar transação para o blockchain: {}", e.getMessage(), e);
-            throw new RuntimeException("Falha na transação blockchain", e);
+
         } catch (Exception e) {
             logger.error("Erro inesperado ao registrar diploma: {}", e.getMessage(), e);
             throw new RuntimeException("Erro ao registrar diploma", e);
         }
     }
+
+
+    private byte[] toBytes32(String value) {
+        byte[] result = new byte[32];
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+
+        if (bytes.length > 32) {
+            throw new RuntimeException("Valor '" + value + "' excede 32 bytes.");
+        }
+
+        System.arraycopy(bytes, 0, result, 0, bytes.length);
+        return result;
+    }
+
+    private byte[] hexToBytes32(String hex) {
+        if (hex == null)
+            throw new IllegalArgumentException("hashDocumento não pode ser null");
+
+        if (hex.startsWith("0x"))
+            hex = hex.substring(2);
+
+        if (hex.length() != 64)
+            throw new IllegalArgumentException("hashDocumento deve ter 64 caracteres hexadecimais (32 bytes)");
+
+        byte[] result = new byte[32];
+        for (int i = 0; i < 32; i++) {
+            result[i] = (byte) Integer.parseInt(hex.substring(i * 2, i * 2 + 2), 16);
+        }
+        return result;
+    }
+
 
     private byte[] stringToBytes(String value, String fieldName) {
         if (value == null) {

@@ -45,8 +45,11 @@ public abstract class DocumentoAcademico {
 
     private String hashBlockchain;
     private String enderecoTransacao;
-    private String assinaturaInstituicao; // assinatura digital da IES
-    private String carimboInstituicao;    // carimbo digital ou CID
+
+    @Lob
+    private byte[] assinaturaInstituicao;
+    @Lob// assinatura digital da IES
+    private byte[] carimboInstituicao;    // carimbo digital ou CID
 
     // Getters e setters
 
@@ -183,10 +186,10 @@ public abstract class DocumentoAcademico {
         this.enderecoTransacao = enderecoTransacao;
     }
 
-    public String getAssinaturaInstituicao() { return assinaturaInstituicao; }
-    public void setAssinaturaInstituicao(String assinaturaInstituicao) { this.assinaturaInstituicao = assinaturaInstituicao; }
+    public byte[] getAssinaturaInstituicao() { return assinaturaInstituicao; }
+    public void setAssinaturaInstituicao(byte[] assinaturaInstituicao) { this.assinaturaInstituicao = assinaturaInstituicao; }
 
-    public String getCarimboInstituicao() { return carimboInstituicao; }
-    public void setCarimboInstituicao(String carimboInstituicao) { this.carimboInstituicao = carimboInstituicao; }
+    public byte[] getCarimboInstituicao() { return carimboInstituicao; }
+    public void setCarimboInstituicao(byte[] carimboInstituicao) { this.carimboInstituicao = carimboInstituicao; }
 
 }

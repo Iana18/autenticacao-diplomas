@@ -26,10 +26,10 @@ public class ValidacaoService {
         this.userRepository = userRepository;
     }
 
-    public Diploma validarDiploma(String hashBlockchain, String numeroMatricula, Long verificadorId) {
-        // Procura diploma pelo hash + matrícula
+    public Diploma validarDiploma(String numeroDiploma, String hashBlockchain, Long verificadorId) {
+        // Procura diploma pelo numeroDiploma + hashBlockchain
         Optional<Diploma> diplomaOpt = diplomaRepository
-                .findByHashBlockchainAndEstudante_NumeroMatricula(hashBlockchain, numeroMatricula);
+                .findByNumeroDiplomaAndHashBlockchain(numeroDiploma, hashBlockchain);
 
         if (diplomaOpt.isEmpty()) {
             throw new RuntimeException("Diploma inválido ou não encontrado.");
