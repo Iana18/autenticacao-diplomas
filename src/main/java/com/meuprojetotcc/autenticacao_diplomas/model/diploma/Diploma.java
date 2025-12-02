@@ -25,6 +25,7 @@ public class Diploma extends DocumentoAcademico {
     private GrauAcademico grauAcademico;
     private LocalDateTime dataConclusao;
 
+
     @Override
     @JsonBackReference
     public Estudante getEstudante() {

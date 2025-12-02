@@ -34,6 +34,11 @@ public class DiplomaService {
     private final UserRepository userRepository;
     private final BlockchainService blockchainService;
 
+
+
+
+
+
     public DiplomaService(DiplomaRepository diplomaRepository, BlockchainService blockchainService,
                           EstudanteRepository estudanteRepository,
                           CursoRepository cursoRepository,
@@ -78,7 +83,7 @@ public class DiplomaService {
     // =================== Criar Diploma ===================
     public Diploma criarDiploma(DiplomaRequestDTO dto,
                                 MultipartFile carimbo,
-                                MultipartFile assinatura,
+                                String assinaturaBase64,
                                 UserDetails userDetails) {
         try {
             User criadoPor = userRepository.findByEmail(userDetails.getUsername())
@@ -105,22 +110,22 @@ public class DiplomaService {
             diploma.setDataConclusao(dto.getDataConclusao().atStartOfDay());
             diploma.setDataEmissao(LocalDateTime.now());
             diploma.setStatus(Status.PENDENTE);
-
-            // Número de diploma único
             diploma.setNumeroDiploma(gerarNumeroDiplomaUnico());
 
-            // Carimbo e assinatura
+            // Carimbo
             if (carimbo != null && !carimbo.isEmpty()) {
                 diploma.setCarimboInstituicao(carimbo.getBytes());
             }
-            if (assinatura != null && !assinatura.isEmpty()) {
-                diploma.setAssinaturaInstituicao(assinatura.getBytes());
+
+            // Assinatura Base64
+            if (assinaturaBase64 != null && !assinaturaBase64.isEmpty()) {
+                // Remove prefixo "data:image/png;base64,"
+                String base64 = assinaturaBase64.contains(",") ? assinaturaBase64.split(",")[1] : assinaturaBase64;
+                byte[] assinaturaBytes = Base64.getDecoder().decode(base64);
+                diploma.setAssinaturaInstituicao(assinaturaBytes);
             }
 
-            // Gera hash do diploma
             diploma.gerarHashBlockchain();
-
-            // TX hash será gerado apenas ao registrar na blockchain
             diploma.setEnderecoTransacao(null);
 
             return diplomaRepository.save(diploma);
@@ -129,6 +134,7 @@ public class DiplomaService {
             throw new RuntimeException("Erro ao criar diploma: " + e.getMessage(), e);
         }
     }
+
     // =================== Listar Todos ===================
     public List<Diploma> listarTodos() {
         return diplomaRepository.findAll();
@@ -217,6 +223,12 @@ public class DiplomaService {
         diploma.setEnderecoTransacao("tx_" + System.currentTimeMillis());
 
         return diplomaRepository.save(diploma);
+    }
+
+    // Buscar diploma pelo número e hash blockchain
+    public Diploma buscarPorNumeroEHash(String numeroDiploma, String hash) {
+        return diplomaRepository.findByNumeroDiplomaAndHashBlockchain(numeroDiploma, hash)
+                .orElseThrow(() -> new RuntimeException("Diploma não encontrado ou inválido"));
     }
 
 }

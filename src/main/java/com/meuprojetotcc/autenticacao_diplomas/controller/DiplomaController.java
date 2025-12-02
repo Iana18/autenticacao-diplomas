@@ -49,38 +49,38 @@ public class DiplomaController {
     public ResponseEntity<?> criarComArquivos(
             @RequestPart("diploma") DiplomaRequestDTO dto,
             @RequestPart(value = "carimbo", required = false) MultipartFile carimbo,
-            @RequestPart(value = "assinatura", required = false) MultipartFile assinatura,
+            @RequestPart(value = "assinaturaDesenhada", required = false) String assinaturaBase64,
             @RequestHeader("Authorization") String tokenHeader) {
 
         try {
-            // 1️⃣ Extrair usuário do token
             String token = tokenHeader.replace("Bearer ", "");
             String username = jwtUtil.extractUsername(token);
+
+            // Busca o User completo no banco
             User usuario = userRepository.findByEmail(username)
                     .orElseThrow(() -> new RuntimeException("Usuário não encontrado no token"));
 
-            // 2️⃣ Criar diploma no banco (hash ainda gerado, mas TX ainda não)
-            Diploma diploma = diplomaService.criarDiploma(dto, carimbo, assinatura, usuario);
+            // Cria diploma
+            Diploma diploma = diplomaService.criarDiploma(dto, carimbo, assinaturaBase64, usuario);
 
-            System.out.println("Carimbo recebido: " + (carimbo != null ? carimbo.getOriginalFilename() : "NULL"));
-            System.out.println("Assinatura recebida: " + (assinatura != null ? assinatura.getOriginalFilename() : "NULL"));
-            // 3️⃣ Registrar diploma na blockchain e pegar TX hash real
+            // Gera e salva transação na blockchain
             String txHash = blockchainService.registrarDiploma(diploma);
             diploma.setEnderecoTransacao(txHash);
 
-            // 4️⃣ Salvar novamente para atualizar TX hash
             diplomaRepository.save(diploma);
 
-            // 5️⃣ Retornar DTO completo
             return ResponseEntity.status(HttpStatus.CREATED).body(mapToResponseDTO(diploma));
 
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erro interno: " + e.getMessage());
+                    .body(Map.of("error", "Erro interno: " + e.getMessage()));
         }
     }
+
+
+
 
 
 
@@ -330,6 +330,7 @@ public class DiplomaController {
         dto.setDataRevogacao(d.getDataRevogacao());
         dto.setHashBlockchain(d.getHashBlockchain());
         dto.setEnderecoTransacao(d.getEnderecoTransacao());
+        dto.getEnderecoTransacao(); // <-- aqui vai o hash real
         dto.setStatus(d.getStatus().toString());
 
         // ✅ Adicionando assinatura e carimbo exatamente como estão no banco (String Base64)

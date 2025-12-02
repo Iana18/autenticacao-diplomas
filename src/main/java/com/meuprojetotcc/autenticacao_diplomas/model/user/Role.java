@@ -7,5 +7,5 @@ public enum Role {
     EMISSOR,                 // Usuário emissor dentro da instituição
     OUTRO,                   // Outro usuário da instituição
     ESTUDANTE,               // Estudante cadastrado
-    USER
+    USER                     //usuarios publicos
 }

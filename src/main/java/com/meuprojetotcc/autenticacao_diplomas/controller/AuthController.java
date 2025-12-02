@@ -4,10 +4,7 @@ import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.EstudanteDto;
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.LoginEstudanteRequestDto;
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.RegistroEstudanteRequestDto;
-import com.meuprojetotcc.autenticacao_diplomas.model.user.LoginRequestUserDto;
-import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
-import com.meuprojetotcc.autenticacao_diplomas.model.user.UserDto;
-import com.meuprojetotcc.autenticacao_diplomas.model.user.UserResponseDto;
+import com.meuprojetotcc.autenticacao_diplomas.model.user.*;
 import com.meuprojetotcc.autenticacao_diplomas.repository.DiplomaRepository;
 import com.meuprojetotcc.autenticacao_diplomas.repository.EstudanteRepository;
 import com.meuprojetotcc.autenticacao_diplomas.repository.UserRepository;
@@ -59,6 +56,7 @@ public class AuthController {
     @PostMapping("/login-user")
     public ResponseEntity<?> loginUser(@RequestBody LoginRequestUserDto request) {
         try {
+            // Autentica email + senha
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getSenha())
             );
@@ -66,17 +64,16 @@ public class AuthController {
             return ResponseEntity.status(401).body("Credenciais inválidas");
         }
 
-        UserDetails userDetails = customUserDetailsService.loadUserByUsername(request.getEmail());
+        // Busca usuário no banco
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        String token = jwtUtil.generateToken(userDetails);
+        // Gera token JWT
+        String token = jwtUtil.generateToken(user);
 
-        String role = "USER";
-        if (userDetails instanceof User u) {
-            role = u.getRole().name();
-        }
-
-        return ResponseEntity.ok(new JwtResponseDto(token, role));
+        return ResponseEntity.ok(new JwtResponseDto(token, user.getRole().name()));
     }
+
 
     // Login para estudante
     @PostMapping("/login-estudante")
@@ -137,8 +134,8 @@ public class AuthController {
     }
 
 
-    @PostMapping("/registro-user")
-    public ResponseEntity<?> registrarUsuario(@RequestBody UserDto userDto) {
+    @PostMapping("/registro-publico")
+    public ResponseEntity<?> registrarUsuarioPublico(@RequestBody UserDto userDto) {
         if (userRepository.existsByEmail(userDto.getEmail())) {
             return ResponseEntity.badRequest().body("Email já cadastrado");
         }
@@ -148,13 +145,36 @@ public class AuthController {
         user.setApelido(userDto.getApelido());
         user.setEmail(userDto.getEmail());
         user.setSenha(passwordEncoder.encode(userDto.getSenha()));
-        user.setRole(userDto.getRole());
+        user.setRole(Role.USER); // garante que todo usuário público seja USER
 
         userRepository.save(user);
 
-        return ResponseEntity.ok(new UserResponseDto(user)); // ✅ Retornando DTO seguro
+        return ResponseEntity.ok("Usuário registrado com sucesso");
     }
 
+
+  /*  @PostMapping("/login-publico")
+    public ResponseEntity<?> loginPublico(@RequestBody LoginRequestUserDto request) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getSenha())
+            );
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.status(401).body("Credenciais inválidas");
+        }
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        if (user.getRole() != Role.USER) {
+            return ResponseEntity.status(403).body("Acesso negado: este login é somente para usuários públicos.");
+        }
+
+        String token = jwtUtil.generateToken(user);
+
+        return ResponseEntity.ok(new JwtResponseDto(token, user.getRole().name()));
+    }
+*/
 
 
     // =================== Método para verificar diploma de estudante (placeholder) ===================

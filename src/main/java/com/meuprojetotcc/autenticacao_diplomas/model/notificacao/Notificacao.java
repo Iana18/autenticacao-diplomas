@@ -1,5 +1,6 @@
 package com.meuprojetotcc.autenticacao_diplomas.model.notificacao;
 
+import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
 import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
 import jakarta.persistence.*;
 import jakarta.persistence.JoinColumn;
@@ -19,6 +20,10 @@ public class Notificacao {
         @ManyToOne(optional = false)
         @JoinColumn(name = "user_id")
         private User usuario;
+
+        @ManyToOne(optional = false)
+        @JoinColumn(name = "estudante_id")
+        private Estudante estudante;
 
         private String mensagem;
 

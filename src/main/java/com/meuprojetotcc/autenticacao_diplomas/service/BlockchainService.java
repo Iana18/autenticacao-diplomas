@@ -41,26 +41,26 @@ public class BlockchainService {
     public String registrarDiploma(Diploma diploma) {
 
         try {
-            // CONVERTE número do diploma para bytes32
+
             byte[] numeroDiplomaBytes = toBytes32(diploma.getNumeroDiploma());
 
             // CONVERTE hash do documento (hex SHA-256) para bytes32
             byte[] hashDocumentoBytes = hexToBytes32(diploma.getHashBlockchain());
 
-            // HASH do carimbo (resultado é bytes32)
+
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hashCarimbo = digest.digest(diploma.getCarimboInstituicao());
 
-            // Assinatura vai como BYTES COMPLETOS (imagem)
+
             byte[] assinaturaBytes = diploma.getAssinaturaInstituicao();
 
             logger.info("Enviando transação para registrar diploma: {}", diploma.getNumeroDiploma());
 
             TransactionReceipt receipt = contrato.registrarDiploma(
-                    numeroDiplomaBytes,     // bytes32
-                    hashDocumentoBytes,     // bytes32
-                    hashCarimbo,            // bytes32
-                    assinaturaBytes         // bytes (dinâmico)
+                    numeroDiplomaBytes,
+                    hashDocumentoBytes,
+                    hashCarimbo,
+                    assinaturaBytes
             ).send();
 
             logger.info("Transação concluída. Hash: {}, Status: {}",

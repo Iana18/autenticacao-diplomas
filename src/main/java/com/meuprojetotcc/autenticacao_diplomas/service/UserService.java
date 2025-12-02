@@ -16,6 +16,9 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+
+
+
     @Autowired
     private PasswordEncoder passwordEncoder;
 
@@ -64,6 +67,12 @@ public class UserService {
 
     public void deletar(Long id) {
         userRepository.deleteById(id);
+    }
+
+
+    public User buscarUsuarioPorEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
     }
 }
 

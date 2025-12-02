@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 public class DiplomaResponseDTO {
 
         private Long id;
+
         private String estudanteNome;
         private String cursoNome;
         private String instituicaoNome;

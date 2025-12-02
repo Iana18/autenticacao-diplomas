@@ -1,11 +1,11 @@
 package com.meuprojetotcc.autenticacao_diplomas.service;
 
-import com.meuprojetotcc.autenticacao_diplomas.model.certificado.Certificado;
+import com.meuprojetotcc.autenticacao_diplomas.model.diploma.Diploma;
 import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
 import com.meuprojetotcc.autenticacao_diplomas.model.verificacao.Verificacao;
-import com.meuprojetotcc.autenticacao_diplomas.repository.VerificacaoRepository;
-import com.meuprojetotcc.autenticacao_diplomas.repository.CertificadoRepository;
+import com.meuprojetotcc.autenticacao_diplomas.repository.DiplomaRepository;
 import com.meuprojetotcc.autenticacao_diplomas.repository.UserRepository;
+import com.meuprojetotcc.autenticacao_diplomas.repository.VerificacaoRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -16,14 +16,14 @@ import java.util.Optional;
 public class VerificacaoService {
 
     private final VerificacaoRepository verificacaoRepository;
-    private final CertificadoRepository certificadoRepository;
+    private final DiplomaRepository diplomaRepository;
     private final UserRepository userRepository;
 
     public VerificacaoService(VerificacaoRepository verificacaoRepository,
-                              CertificadoRepository certificadoRepository,
+                              DiplomaRepository diplomaRepository,
                               UserRepository userRepository) {
         this.verificacaoRepository = verificacaoRepository;
-        this.certificadoRepository = certificadoRepository;
+        this.diplomaRepository = diplomaRepository;
         this.userRepository = userRepository;
     }
 
@@ -31,48 +31,23 @@ public class VerificacaoService {
         return verificacaoRepository.findAll();
     }
 
-    public Optional<Verificacao> buscarPorId(Long id) {
-        return verificacaoRepository.findById(id);
-    }
 
-    public Verificacao criarVerificacao(Long certificadoId, Long verificadorId) {
-        Certificado certificado = certificadoRepository.findById(certificadoId)
-                .orElseThrow(() -> new RuntimeException("Certificado não encontrado"));
+    public User buscarUsuarioPorEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+    }
+    public Verificacao criarVerificacao(Long diplomaId, Long verificadorId) {
+        Diploma diploma = diplomaRepository.findById(diplomaId)
+                .orElseThrow(() -> new RuntimeException("Diploma não encontrado"));
+
         User verificador = userRepository.findById(verificadorId)
                 .orElseThrow(() -> new RuntimeException("Usuário verificador não encontrado"));
 
         Verificacao verificacao = new Verificacao();
-        verificacao.setCertificado(certificado);
+        verificacao.setDiploma(diploma);
         verificacao.setVerificador(verificador);
         verificacao.setDataVerificacao(LocalDateTime.now());
 
         return verificacaoRepository.save(verificacao);
-    }
-
-    public Verificacao atualizarVerificacao(Long id, Long certificadoId, Long verificadorId, LocalDateTime novaData) {
-        Verificacao verificacao = verificacaoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Verificação não encontrada"));
-
-        if (certificadoId != null) {
-            Certificado certificado = certificadoRepository.findById(certificadoId)
-                    .orElseThrow(() -> new RuntimeException("Certificado não encontrado"));
-            verificacao.setCertificado(certificado);
-        }
-
-        if (verificadorId != null) {
-            User verificador = userRepository.findById(verificadorId)
-                    .orElseThrow(() -> new RuntimeException("Usuário verificador não encontrado"));
-            verificacao.setVerificador(verificador);
-        }
-
-        if (novaData != null) {
-            verificacao.setDataVerificacao(novaData);
-        }
-
-        return verificacaoRepository.save(verificacao);
-    }
-
-    public void deletarVerificacao(Long id) {
-        verificacaoRepository.deleteById(id);
     }
 }

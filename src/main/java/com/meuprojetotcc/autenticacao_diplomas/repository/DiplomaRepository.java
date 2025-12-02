@@ -12,6 +12,7 @@ public interface DiplomaRepository extends JpaRepository<Diploma, Long> {
 
     List<Diploma> findByEstudanteId(Long estudanteId);
     Optional<Diploma> findByNumeroDiplomaAndHashBlockchain(String numeroDiploma, String hashBlockchain);
+
     List<Diploma> findByEstudante(Estudante estudante);
     Optional<Diploma> findByHashBlockchain(String hashBlockchain);
     // Buscar diplomas por nome do estudante

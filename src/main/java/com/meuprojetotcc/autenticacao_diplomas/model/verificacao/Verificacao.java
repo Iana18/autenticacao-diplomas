@@ -14,10 +14,10 @@ public class Verificacao {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
+  /*  @ManyToOne(optional = false)
     @JoinColumn(name = "certificado_id")
     private Certificado certificado;
-
+*/
     @ManyToOne(optional = false)
     @JoinColumn(name = "verificador_id")
     private User verificador;
@@ -32,7 +32,7 @@ public class Verificacao {
 
     // Construtor com parâmetros
     public Verificacao(Certificado certificado, User verificador, LocalDateTime dataVerificacao) {
-        this.certificado = certificado;
+        //this.certificado = certificado;
         this.verificador = verificador;
         this.dataVerificacao = dataVerificacao;
     }
@@ -46,14 +46,14 @@ public class Verificacao {
         this.id = id;
     }
 
-    public Certificado getCertificado() {
+   /* public Certificado getCertificado() {
         return certificado;
     }
 
     public void setCertificado(Certificado certificado) {
         this.certificado = certificado;
     }
-
+*/
     public User getVerificador() {
         return verificador;
     }

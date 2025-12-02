@@ -2,50 +2,48 @@ package com.meuprojetotcc.autenticacao_diplomas.service;
 
 import com.meuprojetotcc.autenticacao_diplomas.model.diploma.Diploma;
 import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
-import com.meuprojetotcc.autenticacao_diplomas.model.verificacao.Verificacao;
+import com.meuprojetotcc.autenticacao_diplomas.model.validacao.Validacao;
 import com.meuprojetotcc.autenticacao_diplomas.repository.DiplomaRepository;
 import com.meuprojetotcc.autenticacao_diplomas.repository.UserRepository;
-import com.meuprojetotcc.autenticacao_diplomas.repository.VerificacaoRepository;
+import com.meuprojetotcc.autenticacao_diplomas.repository.ValidacaoRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 public class ValidacaoService {
 
     private final DiplomaRepository diplomaRepository;
-    private final VerificacaoRepository verificacaoRepository;
     private final UserRepository userRepository;
+    private final ValidacaoRepository validacaoRepository;
 
     public ValidacaoService(DiplomaRepository diplomaRepository,
-                            VerificacaoRepository verificacaoRepository,
-                            UserRepository userRepository) {
+                            UserRepository userRepository,
+                            ValidacaoRepository validacaoRepository) {
         this.diplomaRepository = diplomaRepository;
-        this.verificacaoRepository = verificacaoRepository;
         this.userRepository = userRepository;
+        this.validacaoRepository = validacaoRepository;
     }
 
-    public Diploma validarDiploma(String numeroDiploma, String hashBlockchain, Long verificadorId) {
-        // Procura diploma pelo numeroDiploma + hashBlockchain
-        Optional<Diploma> diplomaOpt = diplomaRepository
-                .findByNumeroDiplomaAndHashBlockchain(numeroDiploma, hashBlockchain);
+    public Diploma validar(String numeroDiploma, String hashBlockchain, String emailVerificador) {
 
-        if (diplomaOpt.isEmpty()) {
-            throw new RuntimeException("Diploma inválido ou não encontrado.");
-        }
+        // 1️⃣ Busca diploma pelo número e hash
+        Diploma diploma = diplomaRepository
+                .findByNumeroDiplomaAndHashBlockchain(numeroDiploma, hashBlockchain)
+                .orElseThrow(() -> new RuntimeException("Diploma inválido ou não encontrado"));
 
-        Diploma diploma = diplomaOpt.get();
-
-        // Registra a verificação
-        User verificador = userRepository.findById(verificadorId)
+        // 2️⃣ Busca usuário que está verificando
+        User verificador = userRepository
+                .findByEmail(emailVerificador)
                 .orElseThrow(() -> new RuntimeException("Usuário verificador não encontrado"));
 
-        Verificacao verificacao = new Verificacao();
-        verificacao.setDiploma(diploma);
-        verificacao.setVerificador(verificador);
-        verificacao.setDataVerificacao(LocalDateTime.now());
-        verificacaoRepository.save(verificacao);
+        // 3️⃣ Registra a validação
+        Validacao validacao = new Validacao();
+        validacao.setDiploma(diploma);
+        validacao.setVerificador(verificador);
+        validacao.setDataVerificacao(LocalDateTime.now());
+
+        validacaoRepository.save(validacao);
 
         return diploma;
     }

@@ -1,11 +1,17 @@
 package com.meuprojetotcc.autenticacao_diplomas.controller;
 
+import com.meuprojetotcc.autenticacao_diplomas.model.diploma.Diploma;
+import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
 import com.meuprojetotcc.autenticacao_diplomas.model.verificacao.Verificacao;
+import com.meuprojetotcc.autenticacao_diplomas.service.UserService;
 import com.meuprojetotcc.autenticacao_diplomas.service.VerificacaoService;
+import com.meuprojetotcc.autenticacao_diplomas.service.DiplomaService; // serviço para buscar diploma
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -14,9 +20,17 @@ import java.util.List;
 public class VerificacaoController {
 
     private final VerificacaoService verificacaoService;
+    private final DiplomaService diplomaService;
+    private  final UserService userService;
 
-    public VerificacaoController(VerificacaoService verificacaoService) {
+    @Value("${jwt.secret}")
+    private String jwtSecret;
+
+    public VerificacaoController(VerificacaoService verificacaoService,
+                                 DiplomaService diplomaService, UserService userService) {
         this.verificacaoService = verificacaoService;
+        this.diplomaService = diplomaService;
+        this.userService = userService;
     }
 
     @GetMapping
@@ -24,36 +38,61 @@ public class VerificacaoController {
         return ResponseEntity.ok(verificacaoService.listarTodas());
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Verificacao> buscarPorId(@PathVariable Long id) {
-        return verificacaoService.buscarPorId(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
+    @PostMapping("/diploma")
+    public ResponseEntity<?> validarDiploma(
+            @RequestHeader("Authorization") String token,
+            @RequestParam String numeroDiploma,
+            @RequestParam String hash) {
 
-    @PostMapping
-    public ResponseEntity<Verificacao> criarVerificacao(@RequestParam Long certificadoId,
-                                                        @RequestParam Long verificadorId) {
-        Verificacao verificacao = verificacaoService.criarVerificacao(certificadoId, verificadorId);
-        return ResponseEntity.ok(verificacao);
-    }
+        try {
+            if (token.startsWith("Bearer "))
+                token = token.substring(7);
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Verificacao> atualizarVerificacao(@PathVariable Long id,
-                                                            @RequestParam(required = false) Long certificadoId,
-                                                            @RequestParam(required = false) Long verificadorId,
-                                                            @RequestParam(required = false) String dataVerificacao) {
-        LocalDateTime novaData = null;
-        if (dataVerificacao != null) {
-            novaData = LocalDateTime.parse(dataVerificacao);
+            Claims claims = Jwts.parser()
+                    .setSigningKey(jwtSecret.getBytes())
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            String email = claims.get("email", String.class);
+
+            // Buscar usuário logado pelo email no UserService
+            User verificador = userService.buscarUsuarioPorEmail(email); // <-- você precisa ter UserService
+
+            // Buscar diploma pelo número e hash no DiplomaService
+            Diploma diploma = diplomaService.buscarPorNumeroEHash(numeroDiploma, hash);
+
+            // Registrar a verificação usando criarVerificacao (do seu VerificacaoService)
+            Verificacao verificacao = verificacaoService.criarVerificacao(diploma.getId(), verificador.getId());
+
+            return ResponseEntity.ok(verificacao);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(
+                    new ApiResponse("Inválido ❌", e.getMessage())
+            );
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(
+                    new ApiResponse("Erro ❌", "Token inválido ou expirado.")
+            );
         }
-        Verificacao verificacaoAtualizada = verificacaoService.atualizarVerificacao(id, certificadoId, verificadorId, novaData);
-        return ResponseEntity.ok(verificacaoAtualizada);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletarVerificacao(@PathVariable Long id) {
-        verificacaoService.deletarVerificacao(id);
-        return ResponseEntity.noContent().build();
+
+    // DTO para respostas de erro
+    static class ApiResponse {
+        private String status;
+        private String mensagem;
+
+        public ApiResponse(String status, String mensagem) {
+            this.status = status;
+            this.mensagem = mensagem;
+        }
+
+        public String getStatus() { return status; }
+        public String getMensagem() { return mensagem; }
     }
 }
+
+
+
+
