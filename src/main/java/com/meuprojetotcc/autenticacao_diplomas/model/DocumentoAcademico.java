@@ -48,7 +48,7 @@ public abstract class DocumentoAcademico {
 
     @Lob
     private byte[] assinaturaInstituicao;
-    @Lob// assinatura digital da IES
+    @Lob//
     private byte[] carimboInstituicao;    // carimbo digital ou CID
 
     // Getters e setters

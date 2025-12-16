@@ -22,14 +22,20 @@ public class Notificacao {
         private User usuario;
 
         @ManyToOne(optional = false)
-        @JoinColumn(name = "estudante_id")
+        @JoinColumn(name = "estudante")
         private Estudante estudante;
+
+        @ManyToOne
+        private User destinatarioUser;
 
         private String mensagem;
 
         private LocalDateTime dataCriacao;
 
         private boolean lida;
+
+        @ManyToOne
+        private User usuarioRemetente; // Quem enviou
 
         public Long getId() {
                 return id;
@@ -69,6 +75,30 @@ public class Notificacao {
 
         public void setId(Long id) {
                 this.id = id;
+        }
+
+        public Estudante getEstudante() {
+                return estudante;
+        }
+
+        public void setEstudante(Estudante estudante) {
+                this.estudante = estudante;
+        }
+
+        public User getDestinatarioUser() {
+                return destinatarioUser;
+        }
+
+        public void setDestinatarioUser(User destinatarioUser) {
+                this.destinatarioUser = destinatarioUser;
+        }
+
+        public User getUsuarioRemetente() {
+                return usuarioRemetente;
+        }
+
+        public void setUsuarioRemetente(User usuarioRemetente) {
+                this.usuarioRemetente = usuarioRemetente;
         }
 }
 

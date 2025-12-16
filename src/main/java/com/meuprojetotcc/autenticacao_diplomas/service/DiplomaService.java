@@ -23,6 +23,14 @@ import java.time.LocalDateTime;
 
 import java.util.List;
 import java.util.Optional;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import javax.imageio.ImageIO;
+import com.google.zxing.*;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.google.zxing.common.BitMatrix;
 
 @Service
 public class DiplomaService {
@@ -63,23 +71,44 @@ public class DiplomaService {
 
 
     // =================== Registrar Diploma na Blockchain ===================
-    public Diploma registrarNaBlockchain(Long diplomaId) throws Exception {
+
+  /*  public Diploma registrarNaBlockchain(Long diplomaId) throws Exception {
         Diploma diploma = diplomaRepository.findById(diplomaId)
                 .orElseThrow(() -> new RuntimeException("Diploma não encontrado"));
 
-        if (diploma.getStatus() == Status.ATIVO) {
-            throw new RuntimeException("Diploma já registrado na blockchain");
+        if (diploma.getStatus() == Status.PENDENTE) {
+            throw new RuntimeException("Somente diplomas ativos podem ser registrados na blockchain");
         }
 
-        // Envia o diploma completo para o smart contract e obtém TX hash real
-        String txHash = blockchainService.registrarDiploma(diploma);
+        diploma.gerarHashBlockchain();
 
-        diploma.setEnderecoTransacao(txHash);
-        diploma.setStatus(Status.ATIVO);
+        String enderecoTransacao = blockchainService.registrarDiploma(diploma);
+
+        diploma.setEnderecoTransacao(enderecoTransacao);
+        diploma.setHashBlockchain(diploma.getHashBlockchain());
 
         return diplomaRepository.save(diploma);
     }
-    // =================== Criar Diploma ===================
+*/
+  // =================== Registrar Diploma na Blockchain ===================
+  public Diploma registrarNaBlockchain(Long diplomaId) throws Exception {
+      Diploma diploma = diplomaRepository.findById(diplomaId)
+              .orElseThrow(() -> new RuntimeException("Diploma não encontrado"));
+
+      if (diploma.getStatus() == Status.ATIVO) {
+          throw new RuntimeException("Diploma já registrado na blockchain");
+      }
+
+      // Envia o diploma completo para o smart contract e obtém TX hash real
+      String txHash = blockchainService.registrarDiploma(diploma);
+
+      diploma.setEnderecoTransacao(txHash);
+      diploma.setStatus(Status.ATIVO);
+
+      return diplomaRepository.save(diploma);
+  }
+
+
     // =================== Criar Diploma ===================
     public Diploma criarDiploma(DiplomaRequestDTO dto,
                                 MultipartFile carimbo,
@@ -125,7 +154,7 @@ public class DiplomaService {
                 diploma.setAssinaturaInstituicao(assinaturaBytes);
             }
 
-            diploma.gerarHashBlockchain();
+            //diploma.gerarHashBlockchain();
             diploma.setEnderecoTransacao(null);
 
             return diplomaRepository.save(diploma);
@@ -134,6 +163,7 @@ public class DiplomaService {
             throw new RuntimeException("Erro ao criar diploma: " + e.getMessage(), e);
         }
     }
+
 
     // =================== Listar Todos ===================
     public List<Diploma> listarTodos() {
@@ -184,7 +214,7 @@ public class DiplomaService {
         d.setNotaFinal(dto.getNotaFinal());
         d.setCargaHoraria(dto.getCargaHoraria());
         d.setNumeroDiploma(dto.getNumeroDiploma());
-        d.setRegistroMinisterio(dto.getRegistroMinisterio());
+        //d.setRegistroMinisterio(dto.getRegistroMinisterio());
 
         // Já é enum, pode setar direto
         d.setGrauAcademico(dto.getGrauAcademico());
@@ -230,5 +260,6 @@ public class DiplomaService {
         return diplomaRepository.findByNumeroDiplomaAndHashBlockchain(numeroDiploma, hash)
                 .orElseThrow(() -> new RuntimeException("Diploma não encontrado ou inválido"));
     }
+
 
 }

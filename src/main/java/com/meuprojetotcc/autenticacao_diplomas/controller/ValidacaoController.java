@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import static java.util.Map.entry;
 
 @RestController
 @RequestMapping("/api/validacao")
@@ -53,12 +54,10 @@ public class ValidacaoController {
 
             // Pega o email do usuário logado
             String email = claims.get("sub", String.class);
-
             User verificador = userService.buscarUsuarioPorEmail(email);
 
             // Busca diploma pelo número e hash
             Diploma diploma = diplomaService.buscarPorNumeroEHash(numeroDiploma, hash);
-
             if (diploma == null) {
                 throw new RuntimeException("Diploma não encontrado");
             }
@@ -66,32 +65,36 @@ public class ValidacaoController {
             // Cria registro da verificação
             Verificacao verificacao = verificacaoService.criarVerificacao(diploma.getId(), verificador.getId());
 
-            // Retorna resposta com dados do diploma
-            return ResponseEntity.ok(Map.of(
-                    "status", "Válido ✅",
-                    "mensagem", "Diploma verificado com sucesso.",
-                    "dados", Map.of(
-                            "nomeEstudante", diploma.getEstudante().getNomeCompleto(),
-                            "numeroDiploma", diploma.getNumeroDiploma(),
-                            "curso", diploma.getCurso().getNome(),
-                            "instituicao", diploma.getInstituicao().getNome(),
-                            "grauAcademico", diploma.getGrauAcademico().toString(),
-                            "dataConclusao", diploma.getDataConclusao(),
-                            "dataEmissao", diploma.getDataEmissao(),
-                            "hashBlockchain", diploma.getHashBlockchain(),
-                            "enderecoTransacao", diploma.getEnderecoTransacao()
-                    )
+            // Retorna resposta com dados do diploma usando Map.ofEntries
+            return ResponseEntity.ok(Map.ofEntries(
+                    entry("status", "Válido ✅"),
+                    entry("mensagem", "Diploma verificado com sucesso."),
+                    entry("dados", Map.ofEntries(
+                            entry("nomeEstudante", diploma.getEstudante().getNomeCompleto()),
+                            entry("numeroDiploma", diploma.getNumeroDiploma()),
+                            entry("curso", diploma.getCurso().getNome()),
+                            entry("instituicao", diploma.getInstituicao().getNome()),
+                            entry("grauAcademico", diploma.getGrauAcademico().toString()),
+                            entry("notaFinal", diploma.getNotaFinal()),
+                            entry("cargaHoraria", diploma.getCargaHoraria()),
+                            entry("assinaturaInstituicao", diploma.getAssinaturaInstituicao()),
+                            entry("carimboInstituicao", diploma.getCarimboInstituicao()),
+                            entry("dataConclusao", diploma.getDataConclusao()),
+                            entry("dataEmissao", diploma.getDataEmissao()),
+                            entry("hashBlockchain", diploma.getHashBlockchain()),
+                            entry("enderecoTransacao", diploma.getEnderecoTransacao())
+                    ))
             ));
 
         } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body(Map.of(
-                    "status", "Inválido ❌",
-                    "mensagem", e.getMessage()
+            return ResponseEntity.status(404).body(Map.ofEntries(
+                    entry("status", "Inválido ❌"),
+                    entry("mensagem", e.getMessage())
             ));
         } catch (Exception e) {
-            return ResponseEntity.status(401).body(Map.of(
-                    "status", "Erro ❌",
-                    "mensagem", "Token inválido ou expirado."
+            return ResponseEntity.status(401).body(Map.ofEntries(
+                    entry("status", "Erro ❌"),
+                    entry("mensagem", "Token inválido ou expirado.")
             ));
         }
     }

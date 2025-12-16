@@ -29,7 +29,7 @@ public class UserService {
 
         User user = new User();
         user.setNome(userDto.getNome());
-        user.setApelido(userDto.getNome()); // Pode adaptar para campo específico
+        user.setApelido(userDto.getApelido()); // Pode adaptar para campo específico
         user.setEmail(userDto.getEmail());
         user.setSenha(passwordEncoder.encode(userDto.getSenha()));
         user.setRole(userDto.getRole());
@@ -52,11 +52,24 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        user.setNome(userDto.getNome());
-        user.setApelido(userDto.getNome());
-        user.setEmail(userDto.getEmail());
-        user.setRole(userDto.getRole());
+        // Atualiza campos corretamente
+        if (userDto.getNome() != null) {
+            user.setNome(userDto.getNome());
+        }
 
+        if (userDto.getApelido() != null) {
+            user.setApelido(userDto.getApelido());
+        }
+
+        if (userDto.getEmail() != null) {
+            user.setEmail(userDto.getEmail());
+        }
+
+        if (userDto.getRole() != null) {
+            user.setRole(userDto.getRole());
+        }
+
+        // Atualiza senha apenas se foi enviada
         if (userDto.getSenha() != null && !userDto.getSenha().isBlank()) {
             user.setSenha(passwordEncoder.encode(userDto.getSenha()));
         }
@@ -73,6 +86,11 @@ public class UserService {
     public User buscarUsuarioPorEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+    }
+
+
+    public UserResponseDto toResponseDto(User user) {
+        return new UserResponseDto(user); // usa o construtor que já existe
     }
 }
 

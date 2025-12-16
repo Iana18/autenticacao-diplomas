@@ -9,6 +9,7 @@ import com.meuprojetotcc.autenticacao_diplomas.repository.DiplomaRepository;
 import com.meuprojetotcc.autenticacao_diplomas.repository.UserRepository;
 import com.meuprojetotcc.autenticacao_diplomas.seguranca.JwtUtil;
 import com.meuprojetotcc.autenticacao_diplomas.service.BlockchainService;
+import com.meuprojetotcc.autenticacao_diplomas.service.CarimboDigitalService;
 import com.meuprojetotcc.autenticacao_diplomas.service.DiplomaPdfService;
 import com.meuprojetotcc.autenticacao_diplomas.service.DiplomaService;
 import org.springframework.http.HttpHeaders;
@@ -18,6 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -33,17 +36,20 @@ public class DiplomaController {
     private final UserRepository userRepository;
     private final BlockchainService blockchainService;
     private final DiplomaRepository diplomaRepository;
+    private  final CarimboDigitalService carimboDigitalService;
     public DiplomaController(DiplomaService diplomaService, DiplomaPdfService pdfService,JwtUtil jwtUtil, UserRepository userRepository,
-                             BlockchainService blockchainService,DiplomaRepository diplomaRepository) {
+                             BlockchainService blockchainService,DiplomaRepository diplomaRepository,CarimboDigitalService carimboDigitalService) {
         this.jwtUtil = jwtUtil;
         this.userRepository = userRepository;
         this.diplomaService = diplomaService;
         this.pdfService = pdfService;
         this.blockchainService= blockchainService;
         this.diplomaRepository =diplomaRepository;
+        this.carimboDigitalService = carimboDigitalService;
     }
 
     // =================== Criar Diploma ===================
+
     // =================== Criar Diploma com arquivos ===================
     @PostMapping(value = "/com-arquivos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> criarComArquivos(
@@ -64,8 +70,8 @@ public class DiplomaController {
             Diploma diploma = diplomaService.criarDiploma(dto, carimbo, assinaturaBase64, usuario);
 
             // Gera e salva transação na blockchain
-            String txHash = blockchainService.registrarDiploma(diploma);
-            diploma.setEnderecoTransacao(txHash);
+            //String txHash = blockchainService.registrarDiploma(diploma);
+           // diploma.setEnderecoTransacao(txHash);
 
             diplomaRepository.save(diploma);
 
@@ -78,9 +84,6 @@ public class DiplomaController {
                     .body(Map.of("error", "Erro interno: " + e.getMessage()));
         }
     }
-
-
-
 
 
 
@@ -311,6 +314,7 @@ public class DiplomaController {
     }
 
 
+
     // =================== Mapper para ResponseDTO ===================
     private DiplomaResponseDTO mapToResponseDTO(Diploma d) {
         DiplomaResponseDTO dto = new DiplomaResponseDTO();
@@ -339,4 +343,39 @@ public class DiplomaController {
 
         return dto;
     }
+
+    @PostMapping("/gerar-carimbo")
+    public ResponseEntity<?> gerarCarimbo(@RequestBody DiplomaRequestDTO dto,
+                                          @RequestHeader("Authorization") String tokenHeader) {
+        try {
+            // Busca o usuário a partir do token (opcional, se precisar incluir no carimbo)
+            String token = tokenHeader.replace("Bearer ", "");
+            String username = jwtUtil.extractUsername(token);
+            User criadoPor = userRepository.findByEmail(username)
+                    .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+            // Cria um objeto Diploma temporário só com os dados do formulário
+            Diploma diplomaTemp = new Diploma();
+            diplomaTemp.setEstudante(dto.getEstudante());
+            diplomaTemp.setCurso(dto.getCurso());
+            diplomaTemp.setInstituicao(dto.getInstituicao());
+            diplomaTemp.setTipoDiploma(dto.getTipoDiploma());
+            diplomaTemp.setNumeroDiploma("TEMP-" + System.currentTimeMillis()); // Número temporário
+            diplomaTemp.setDataEmissao(LocalDateTime.now());
+            diplomaTemp.setCriadoPor(criadoPor);
+
+            // Gera o carimbo digital com QR Code usando os dados acima
+            byte[] carimboDigital = carimboDigitalService.gerarCarimboComQRCode(diplomaTemp);
+
+            // Converte para Base64 para enviar ao front
+            String carimboBase64 = Base64.getEncoder().encodeToString(carimboDigital);
+
+            return ResponseEntity.ok(Map.of("carimboDigital", carimboBase64));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
 }
