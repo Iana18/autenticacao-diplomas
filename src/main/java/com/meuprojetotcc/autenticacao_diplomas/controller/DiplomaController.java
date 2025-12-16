@@ -290,7 +290,7 @@ public class DiplomaController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erro ao aprovar diploma: " + e.getMessage());
+                    .body("Erro ao aprovar e registrar diploma na blockchain: " + e.getMessage());
         }
     }
 
@@ -334,7 +334,7 @@ public class DiplomaController {
         dto.setDataRevogacao(d.getDataRevogacao());
         dto.setHashBlockchain(d.getHashBlockchain());
         dto.setEnderecoTransacao(d.getEnderecoTransacao());
-        dto.getEnderecoTransacao(); // <-- aqui vai o hash real
+        //dto.getEnderecoTransacao(); // <-- aqui vai o hash real
         dto.setStatus(d.getStatus().toString());
 
         // ✅ Adicionando assinatura e carimbo exatamente como estão no banco (String Base64)
@@ -344,38 +344,6 @@ public class DiplomaController {
         return dto;
     }
 
-    @PostMapping("/gerar-carimbo")
-    public ResponseEntity<?> gerarCarimbo(@RequestBody DiplomaRequestDTO dto,
-                                          @RequestHeader("Authorization") String tokenHeader) {
-        try {
-            // Busca o usuário a partir do token (opcional, se precisar incluir no carimbo)
-            String token = tokenHeader.replace("Bearer ", "");
-            String username = jwtUtil.extractUsername(token);
-            User criadoPor = userRepository.findByEmail(username)
-                    .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-            // Cria um objeto Diploma temporário só com os dados do formulário
-            Diploma diplomaTemp = new Diploma();
-            diplomaTemp.setEstudante(dto.getEstudante());
-            diplomaTemp.setCurso(dto.getCurso());
-            diplomaTemp.setInstituicao(dto.getInstituicao());
-            diplomaTemp.setTipoDiploma(dto.getTipoDiploma());
-            diplomaTemp.setNumeroDiploma("TEMP-" + System.currentTimeMillis()); // Número temporário
-            diplomaTemp.setDataEmissao(LocalDateTime.now());
-            diplomaTemp.setCriadoPor(criadoPor);
-
-            // Gera o carimbo digital com QR Code usando os dados acima
-            byte[] carimboDigital = carimboDigitalService.gerarCarimboComQRCode(diplomaTemp);
-
-            // Converte para Base64 para enviar ao front
-            String carimboBase64 = Base64.getEncoder().encodeToString(carimboDigital);
-
-            return ResponseEntity.ok(Map.of("carimboDigital", carimboBase64));
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
-        }
-    }
 
 }

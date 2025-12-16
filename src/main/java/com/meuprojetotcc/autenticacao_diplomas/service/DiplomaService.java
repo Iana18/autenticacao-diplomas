@@ -72,26 +72,25 @@ public class DiplomaService {
 
     // =================== Registrar Diploma na Blockchain ===================
 
-  /*  public Diploma registrarNaBlockchain(Long diplomaId) throws Exception {
+    public Diploma registrarNaBlockchain(Long diplomaId) throws Exception {
         Diploma diploma = diplomaRepository.findById(diplomaId)
                 .orElseThrow(() -> new RuntimeException("Diploma não encontrado"));
 
-        if (diploma.getStatus() == Status.PENDENTE) {
-            throw new RuntimeException("Somente diplomas ativos podem ser registrados na blockchain");
-        }
+        if (diploma.getStatus() != Status.ATIVO)
+            throw new RuntimeException("Somente diplomas aprovados podem ser registrados na blockchain");
 
+        // Gera hash final para blockchain
         diploma.gerarHashBlockchain();
 
-        String enderecoTransacao = blockchainService.registrarDiploma(diploma);
+        // Chamada real ao smart contract
+        String txHash = blockchainService.registrarDiploma(diploma);
 
-        diploma.setEnderecoTransacao(enderecoTransacao);
-        diploma.setHashBlockchain(diploma.getHashBlockchain());
-
+        diploma.setEnderecoTransacao(txHash);
         return diplomaRepository.save(diploma);
     }
-*/
+
   // =================== Registrar Diploma na Blockchain ===================
-  public Diploma registrarNaBlockchain(Long diplomaId) throws Exception {
+  /*public Diploma registrarNaBlockchain(Long diplomaId) throws Exception {
       Diploma diploma = diplomaRepository.findById(diplomaId)
               .orElseThrow(() -> new RuntimeException("Diploma não encontrado"));
 
@@ -107,7 +106,7 @@ public class DiplomaService {
 
       return diplomaRepository.save(diploma);
   }
-
+*/
 
     // =================== Criar Diploma ===================
     public Diploma criarDiploma(DiplomaRequestDTO dto,
@@ -239,7 +238,7 @@ public class DiplomaService {
     }
 
     // =================== Aprovar Diploma ===================
-    public Diploma aprovar(Long id) {
+  /*  public Diploma aprovar(Long id) {
         Diploma diploma = diplomaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Diploma não encontrado"));
 
@@ -254,6 +253,31 @@ public class DiplomaService {
 
         return diplomaRepository.save(diploma);
     }
+*/
+
+
+    public Diploma aprovar(Long id) throws Exception {
+        Diploma diploma = diplomaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Diploma não encontrado"));
+
+        if (diploma.getStatus() != Status.PENDENTE)
+            throw new RuntimeException("Somente diplomas pendentes podem ser aprovados");
+
+        diploma.setStatus(Status.ATIVO);
+        diploma.setDataEmissao(LocalDateTime.now());
+
+        // Gera hash do diploma
+        diploma.gerarHashBlockchain();
+
+        // Envia para blockchain e obtém a transação
+        String txHash = blockchainService.registrarDiploma(diploma);
+        diploma.setEnderecoTransacao(txHash);
+
+        return diplomaRepository.save(diploma);
+    }
+
+
+
 
     // Buscar diploma pelo número e hash blockchain
     public Diploma buscarPorNumeroEHash(String numeroDiploma, String hash) {
