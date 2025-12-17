@@ -1,5 +1,6 @@
 package com.meuprojetotcc.autenticacao_diplomas.service;
 
+import com.meuprojetotcc.autenticacao_diplomas.model.HistoricoAdulteracao;
 import com.meuprojetotcc.autenticacao_diplomas.model.diploma.Diploma;
 import com.meuprojetotcc.autenticacao_diplomas.model.diploma.DiplomaRequestDTO;
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
@@ -7,25 +8,23 @@ import com.meuprojetotcc.autenticacao_diplomas.model.Curso.Curso;
 import com.meuprojetotcc.autenticacao_diplomas.model.Instituicao.Instituicao;
 import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
 import com.meuprojetotcc.autenticacao_diplomas.model.certificado.Status;
-import com.meuprojetotcc.autenticacao_diplomas.repository.DiplomaRepository;
-import com.meuprojetotcc.autenticacao_diplomas.repository.EstudanteRepository;
-import com.meuprojetotcc.autenticacao_diplomas.repository.CursoRepository;
-import com.meuprojetotcc.autenticacao_diplomas.repository.InstituicaoRepository;
-import com.meuprojetotcc.autenticacao_diplomas.repository.UserRepository;
+import com.meuprojetotcc.autenticacao_diplomas.repository.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import java.util.Base64;
+
+import java.util.*;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import java.util.List;
-import java.util.Optional;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.util.List;
 import javax.imageio.ImageIO;
 import com.google.zxing.*;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
@@ -41,6 +40,9 @@ public class DiplomaService {
     private final InstituicaoRepository instituicaoRepository;
     private final UserRepository userRepository;
     private final BlockchainService blockchainService;
+
+    @Autowired
+    private HistoricoAdulteracaoRepository historicoRepository;
 
 
 
@@ -284,6 +286,89 @@ public class DiplomaService {
         return diplomaRepository.findByNumeroDiplomaAndHashBlockchain(numeroDiploma, hash)
                 .orElseThrow(() -> new RuntimeException("Diploma não encontrado ou inválido"));
     }
+
+
+
+
+    // Método para registrar alterações suspeitas
+    private void registrarAlteracoesSeAtivo(Diploma existente, Diploma atualizado) {
+        if (existente.getStatus() != Status.ATIVO) return;
+
+        Map<String, String> antigos = Map.of(
+                "notaFinal", String.valueOf(existente.getNotaFinal()),
+                "tipoDiploma", existente.getTipoDiploma(),
+                "cargaHoraria", String.valueOf(existente.getCargaHoraria()),
+                "grauAcademico", existente.getGrauAcademico().toString(),
+                "dataConclusao", existente.getDataConclusao() != null ? existente.getDataConclusao().toString() : null
+        );
+
+        Map<String, String> novos = Map.of(
+                "notaFinal", String.valueOf(atualizado.getNotaFinal()),
+                "tipoDiploma", atualizado.getTipoDiploma(),
+                "cargaHoraria", String.valueOf(atualizado.getCargaHoraria()),
+                "grauAcademico", atualizado.getGrauAcademico().toString(),
+                "dataConclusao", atualizado.getDataConclusao() != null ? atualizado.getDataConclusao().toString() : null
+        );
+
+        for (String campo : antigos.keySet()) {
+            if (!Objects.equals(antigos.get(campo), novos.get(campo))) {
+                HistoricoAdulteracao h = new HistoricoAdulteracao();
+                h.setDiplomaId(existente.getId());
+                h.setCampo(campo);
+                h.setValorAntigo(antigos.get(campo));
+                h.setValorNovo(novos.get(campo));
+                historicoRepository.save(h);
+            }
+        }
+    }
+
+    // Atualizar diploma e registrar adulterações
+    public Diploma atualizarDiplomaComHistorico(Long id, Diploma atualizado) {
+        Diploma existente = diplomaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Diploma não encontrado"));
+
+        registrarAlteracoesSeAtivo(existente, atualizado);
+
+        existente.setNotaFinal(atualizado.getNotaFinal());
+        existente.setTipoDiploma(atualizado.getTipoDiploma());
+        existente.setCargaHoraria(atualizado.getCargaHoraria());
+        existente.setGrauAcademico(atualizado.getGrauAcademico());
+        existente.setDataConclusao(atualizado.getDataConclusao());
+
+        return diplomaRepository.save(existente);
+    }
+
+    // Validar diploma por número
+    public String validarDiploma(String numeroDiploma) {
+        Diploma diploma = diplomaRepository.findByNumeroDiploma(numeroDiploma)
+                .orElseThrow(() -> new RuntimeException("Diploma não encontrado"));
+
+        List<HistoricoAdulteracao> adulteracoes = historicoRepository.findByDiplomaId(diploma.getId());
+
+        if (adulteracoes.isEmpty()) {
+            return "VALIDO";
+        } else {
+            StringBuilder sb = new StringBuilder("INVALIDO. Campos adulterados:\n");
+            adulteracoes.forEach(h -> sb.append(h.getCampo())
+                    .append(": de '")
+                    .append(h.getValorAntigo())
+                    .append("' para '")
+                    .append(h.getValorNovo())
+                    .append("'\n"));
+            return sb.toString();
+        }
+    }
+
+
+    public Diploma buscarPorNumero(String numeroDiploma) {
+        return diplomaRepository.findByNumeroDiploma(numeroDiploma)
+                .orElseThrow(() -> new RuntimeException("Diploma não encontrado"));
+    }
+
+
+
+
+
 
 
 }

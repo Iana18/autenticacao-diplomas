@@ -24,6 +24,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import static java.util.Map.entry;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/diplomas")
@@ -71,7 +73,7 @@ public class DiplomaController {
 
             // Gera e salva transação na blockchain
             //String txHash = blockchainService.registrarDiploma(diploma);
-           // diploma.setEnderecoTransacao(txHash);
+            // diploma.setEnderecoTransacao(txHash);
 
             diplomaRepository.save(diploma);
 
@@ -342,6 +344,57 @@ public class DiplomaController {
         dto.setCarimboInstituicao(d.getCarimboInstituicao());
 
         return dto;
+    }
+
+
+    @GetMapping("/validar/{numeroDiploma}")
+    public ResponseEntity<?> validar(@PathVariable String numeroDiploma) {
+        try {
+            // Verifica se o diploma é válido ou adulterado
+            String resultadoValidacao = diplomaService.validarDiploma(numeroDiploma);
+
+            Diploma diploma = diplomaService.buscarPorNumero(numeroDiploma);
+
+            if (resultadoValidacao.equals("VALIDO")) {
+                // Importante: precisa do import static java.util.Map.entry;
+                return ResponseEntity.ok(Map.ofEntries(
+                        entry("status", "Válido ✅"),
+                        entry("mensagem", "Diploma verificado com sucesso."),
+                        entry("dados", Map.ofEntries(
+                                entry("nomeEstudante", diploma.getEstudante().getNomeCompleto()),
+                                entry("numeroDiploma", diploma.getNumeroDiploma()),
+                                entry("cursoNome", diploma.getCurso().getNome()),
+                                entry("instituicaoNome", diploma.getInstituicao().getNome()),
+                                entry("grauAcademico", diploma.getGrauAcademico().toString()),
+                                entry("notaFinal", diploma.getNotaFinal()),
+                                entry("cargaHoraria", diploma.getCargaHoraria()),
+                                entry("assinaturaInstituicao", diploma.getAssinaturaInstituicao()),
+                                entry("carimboInstituicao", diploma.getCarimboInstituicao()),
+                                entry("dataConclusao", diploma.getDataConclusao()),
+                                entry("dataEmissao", diploma.getDataEmissao()),
+                                entry("hashBlockchain", diploma.getHashBlockchain()),
+                                entry("enderecoTransacao", diploma.getEnderecoTransacao())
+                        ))
+                ));
+            } else {
+                // Retorna inválido com detalhes
+                return ResponseEntity.status(404).body(Map.of(
+                        "status", "Inválido ❌",
+                        "mensagem", resultadoValidacao
+                ));
+            }
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(Map.of(
+                    "status", "Inválido ❌",
+                    "mensagem", e.getMessage()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", "Erro ❌",
+                    "mensagem", "Erro interno do servidor."
+            ));
+        }
     }
 
 

@@ -10,6 +10,8 @@ import com.meuprojetotcc.autenticacao_diplomas.model.certificado.Status;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 
 @Entity
@@ -24,6 +26,7 @@ public class Diploma extends DocumentoAcademico {
     private String registroMinisterio;
     private GrauAcademico grauAcademico;
     private LocalDateTime dataConclusao;
+
 
 
     @Override
@@ -52,6 +55,9 @@ public class Diploma extends DocumentoAcademico {
         this.registroMinisterio = registroMinisterio;
         this.dataConclusao = dataConclusao;
     }
+
+
+
 
     // ===== GETTERS E SETTERS =====
 

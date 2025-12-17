@@ -1,101 +1,78 @@
-package com.meuprojetotcc.autenticacao_diplomas.controller;
+/*package com.meuprojetotcc.autenticacao_diplomas.controller;
 
+import com.meuprojetotcc.autenticacao_diplomas.model.HistoricoAdulteracao;
 import com.meuprojetotcc.autenticacao_diplomas.model.diploma.Diploma;
-import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
-import com.meuprojetotcc.autenticacao_diplomas.model.verificacao.Verificacao;
-import com.meuprojetotcc.autenticacao_diplomas.service.DiplomaService;
-import com.meuprojetotcc.autenticacao_diplomas.service.UserService;
-import com.meuprojetotcc.autenticacao_diplomas.service.VerificacaoService;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
+import com.meuprojetotcc.autenticacao_diplomas.repository.DiplomaRepository;
+import com.meuprojetotcc.autenticacao_diplomas.service.HistoricoAdulteracaoService;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.util.Map;
-import static java.util.Map.entry;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/validacao")
 @CrossOrigin(origins = "*")
 public class ValidacaoController {
 
-    private final VerificacaoService verificacaoService;
-    private final DiplomaService diplomaService;
-    private final UserService userService;
+    private final DiplomaRepository diplomaRepository;
+    private final HistoricoAdulteracaoService historicoService;
 
-    @Value("${jwt.secret}")
-    private String jwtSecret;
-
-    public ValidacaoController(VerificacaoService verificacaoService,
-                               DiplomaService diplomaService,
-                               UserService userService) {
-        this.verificacaoService = verificacaoService;
-        this.diplomaService = diplomaService;
-        this.userService = userService;
+    public ValidacaoController(DiplomaRepository diplomaRepository,
+                               HistoricoAdulteracaoService historicoService) {
+        this.diplomaRepository = diplomaRepository;
+        this.historicoService = historicoService;
     }
 
-    @GetMapping("/diploma-publico")
-    public ResponseEntity<?> validarDiplomaPublico(
-            @RequestHeader("Authorization") String token,
-            @RequestParam String numeroDiploma,
-            @RequestParam String hash) {
+    @GetMapping("/diploma")
+    public ValidacaoResponse validarDiploma(@RequestParam String numeroDiploma) {
 
-        try {
-            // Remove "Bearer " do token
-            if (token.startsWith("Bearer ")) token = token.substring(7);
+        Diploma diploma = diplomaRepository.findByNumeroDiploma(numeroDiploma)
+                .orElseThrow(() -> new RuntimeException("Diploma não encontrado"));
 
-            // Lê claims do JWT
-            Claims claims = Jwts.parser()
-                    .setSigningKey(jwtSecret.getBytes())
-                    .parseClaimsJws(token)
-                    .getBody();
+        boolean valido = historicoService.isDiplomaValido(diploma);
+        List<HistoricoAdulteracao> alteracoes = historicoService.getAlteracoes(diploma);
 
-            // Pega o email do usuário logado
-            String email = claims.get("sub", String.class);
-            User verificador = userService.buscarUsuarioPorEmail(email);
+        return new ValidacaoResponse(valido, diploma, alteracoes);
+    }
 
-            // Busca diploma pelo número e hash
-            Diploma diploma = diplomaService.buscarPorNumeroEHash(numeroDiploma, hash);
-            if (diploma == null) {
-                throw new RuntimeException("Diploma não encontrado");
-            }
+    // DTO para retorno
+    public static class ValidacaoResponse {
+        private boolean valido;
+        private Diploma dados;
+        private List<AlteracaoDTO> alteracoes;
 
-            // Cria registro da verificação
-            Verificacao verificacao = verificacaoService.criarVerificacao(diploma.getId(), verificador.getId());
-
-            // Retorna resposta com dados do diploma usando Map.ofEntries
-            return ResponseEntity.ok(Map.ofEntries(
-                    entry("status", "Válido ✅"),
-                    entry("mensagem", "Diploma verificado com sucesso."),
-                    entry("dados", Map.ofEntries(
-                            entry("nomeEstudante", diploma.getEstudante().getNomeCompleto()),
-                            entry("numeroDiploma", diploma.getNumeroDiploma()),
-                            entry("curso", diploma.getCurso().getNome()),
-                            entry("instituicao", diploma.getInstituicao().getNome()),
-                            entry("grauAcademico", diploma.getGrauAcademico().toString()),
-                            entry("notaFinal", diploma.getNotaFinal()),
-                            entry("cargaHoraria", diploma.getCargaHoraria()),
-                            entry("assinaturaInstituicao", diploma.getAssinaturaInstituicao()),
-                            entry("carimboInstituicao", diploma.getCarimboInstituicao()),
-                            entry("dataConclusao", diploma.getDataConclusao()),
-                            entry("dataEmissao", diploma.getDataEmissao()),
-                            entry("hashBlockchain", diploma.getHashBlockchain()),
-                            entry("enderecoTransacao", diploma.getEnderecoTransacao())
-                    ))
-            ));
-
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body(Map.ofEntries(
-                    entry("status", "Inválido ❌"),
-                    entry("mensagem", e.getMessage())
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.status(401).body(Map.ofEntries(
-                    entry("status", "Erro ❌"),
-                    entry("mensagem", "Token inválido ou expirado.")
-            ));
+        public ValidacaoResponse(boolean valido, Diploma dados, List<HistoricoAdulteracao> alteracoes) {
+            this.valido = valido;
+            this.dados = dados;
+            this.alteracoes = alteracoes.stream()
+                    .map(a -> new AlteracaoDTO(a.getCampoAlterado(), a.getValorAntigo(), a.getValorNovo(), a.getDataAlteracao()))
+                    .collect(Collectors.toList());
         }
+
+        // getters
+        public boolean isValido() { return valido; }
+        public Diploma getDados() { return dados; }
+        public List<AlteracaoDTO> getAlteracoes() { return alteracoes; }
+    }
+
+    public static class AlteracaoDTO {
+        private String campo;
+        private String valorAntigo;
+        private String valorNovo;
+        private String dataAlteracao;
+
+        public AlteracaoDTO(String campo, String valorAntigo, String valorNovo, java.time.LocalDateTime data) {
+            this.campo = campo;
+            this.valorAntigo = valorAntigo;
+            this.valorNovo = valorNovo;
+            this.dataAlteracao = data.toString();
+        }
+
+        // getters
+        public String getCampo() { return campo; }
+        public String getValorAntigo() { return valorAntigo; }
+        public String getValorNovo() { return valorNovo; }
+        public String getDataAlteracao() { return dataAlteracao; }
     }
 }
+*/

@@ -126,4 +126,7 @@ public class BlockchainService {
             throw new IllegalArgumentException("Falha ao decodificar Base64 para " + fieldName, e);
         }
     }
+
+
+
 }

@@ -3,6 +3,7 @@ package com.meuprojetotcc.autenticacao_diplomas.model;
 import com.meuprojetotcc.autenticacao_diplomas.model.Estudante.Estudante;
 import com.meuprojetotcc.autenticacao_diplomas.model.Curso.Curso;
 import com.meuprojetotcc.autenticacao_diplomas.model.Instituicao.Instituicao;
+import com.meuprojetotcc.autenticacao_diplomas.model.diploma.Diploma;
 import com.meuprojetotcc.autenticacao_diplomas.model.user.User;
 import com.meuprojetotcc.autenticacao_diplomas.model.certificado.Status;
 import jakarta.persistence.*;
@@ -82,19 +83,33 @@ public abstract class DocumentoAcademico {
     public void gerarHashBlockchain() {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            String dados = this.estudante.getNumeroMatricula()
-                    + this.estudante.getNomeCompleto()   // adicionando o nome completo
-                    + this.curso.getNome()
-                    + this.instituicao.getNome()
-                    + this.dataEmissao.toString()
-                    + (this.carimboInstituicao != null ? this.carimboInstituicao : "")
-                    + (this.assinaturaInstituicao != null ? this.assinaturaInstituicao : "");
+            String dados = this.getEstudante().getNumeroMatricula()
+                    + this.getEstudante().getNomeCompleto()
+                    + this.getCurso().getNome()
+                    + this.getInstituicao().getNome()
+                    + this.getDataEmissao().toString()
+                    + (this.getCarimboInstituicao() != null ? new String(this.getCarimboInstituicao()) : "")
+                    + (this.getAssinaturaInstituicao() != null ? new String(this.getAssinaturaInstituicao()) : "");
+
+            // Campos do Diploma
+            if (this instanceof Diploma) {
+                Diploma d = (Diploma) this;
+                dados += d.getTipoDiploma()
+                        + d.getNotaFinal()
+                        + d.getCargaHoraria()
+                        + d.getGrauAcademico()
+                        + d.getNumeroDiploma()
+                        + (d.getDataConclusao() != null ? d.getDataConclusao().toString() : "");
+            }
+
             byte[] hash = digest.digest(dados.getBytes());
-            this.hashBlockchain = bytesToHex(hash);
+            this.setHashBlockchain(bytesToHex(hash));
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Erro ao gerar hash: " + e.getMessage());
         }
     }
+
+
 
     private static String bytesToHex(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
